@@ -18,6 +18,13 @@ check_github_oidc_subject_format() {
     fi
 }
 
+exit_script() {
+    local message="$1"
+    local exit_code="${2:-1}"
+    echo "$message"
+    exit "$exit_code"
+}
+
 get_fed_cred_params() {
   local subj="$1"
   local subj_name="$2"
