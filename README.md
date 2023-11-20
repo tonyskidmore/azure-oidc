@@ -169,6 +169,5 @@ export AZURE_OIDC_YES_FLAG="true"
 [AzureCLI@2 task](https://github.com/Azure-Samples/azure-devops-terraform-oidc-ci-cd/blob/8f8c0073a145ddbcbcda2d67d4e9027e317a5c37/pipelines/oidc.yml#L81)  
 
 ## TODO
-* d = debug output
 * add option for Azure DevOps
 * further testing and tests

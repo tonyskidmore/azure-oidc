@@ -18,10 +18,17 @@ check_github_oidc_subject_format() {
     fi
 }
 
+exit_script() {
+    local message="$1"
+    local exit_code="${2:-1}"
+    echo "$message"
+    exit "$exit_code"
+}
+
 get_fed_cred_params() {
   local subj="$1"
   local subj_name="$2"
-  echo "{\"name\": \"$subj_name\", \"issuer\": \"https://token.actions.githubusercontent.com\", \"subject\": \"$subj\", \"description\": \"GitHub to Azure OIDC\", \"audiences\": [\"api://AzureADTokenExchange\"]}"
+  echo "{\"name\": \"$subj_name\", \"issuer\": \"https://token.actions.githubusercontent.com\", \"subject\": \"$subj\", \"description\": \"${AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO} to Azure OIDC\", \"audiences\": [\"api://AzureADTokenExchange\"]}"
 }
 
 replace_colon_and_slash() {
