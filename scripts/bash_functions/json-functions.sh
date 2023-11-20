@@ -20,7 +20,6 @@ jq_check_json() {
     fi
 }
 
-
 jq_count_list() {
   local json="$1"
 

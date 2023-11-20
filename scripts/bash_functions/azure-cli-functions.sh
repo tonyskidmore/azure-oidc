@@ -56,11 +56,6 @@ create_az_role_assignment_sp() {
   local az_role_assignment_object_id="$3"
   local az_role_assignment_scope="$4"
 
-  declare -p az_role_assignment_name
-  declare -p az_role_assignment_subscription_id
-  declare -p az_role_assignment_object_id
-  declare -p az_role_assignment_scope
-
   az role assignment create \
     --role "$az_role_assignment_name" \
     --subscription "$az_role_assignment_subscription_id" \
@@ -103,6 +98,7 @@ get_az_ad_app_fed_cred_id() {
 
   az ad app federated-credential list \
     --id "$az_ad_app_id" \
+    --query "[?subject=='$subj']" \
     --output json
 }
 
@@ -118,15 +114,15 @@ get_az_ad_sp_id() {
 }
 
 get_az_subscription_id() {
-  local az_subscription_id=""
-  az_subscription_id=$(az account show \
-                         --output json)
-  jq -r '.id' <<< "$az_subscription_id"
+  local az_account=""
+  az_account=$(az account show \
+                 --output json)
+  jq -r '.id' <<< "$az_account"
 }
 
 get_az_tenant_id() {
-  local az_tenant_id=""
-  az_tenant_id=$(az account show \
-                   --output json)
-  jq -r '.tenantId' <<< "$az_subscription_id"
+  local az_account=""
+  az_account=$(az account show \
+                 --output json)
+  jq -r '.tenantId' <<< "$az_account"
 }

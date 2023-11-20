@@ -132,7 +132,6 @@ create_oidc_app() {
 
       role_assignment=$(trim_spaces "$role")
       debug_output "$LINENO" "role_assignment" "$role_assignment"
-      declare -p role_assignment
 
       json=$(create_az_role_assignment_sp "$role_assignment" "$AZURE_SUBSCRIPTION_ID" "$sp_id" "$full_scope")
       debug_output "$LINENO" "create_az_role_assignment_sp JSON" "$json"

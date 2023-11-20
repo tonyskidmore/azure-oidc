@@ -38,21 +38,12 @@ replace_colon_and_slash() {
     echo "$output"
 }
 
-# trim_spaces() {
-#   # remove leading and then trailing spaces
-#   local input="$1"
-#   local output="${input#"${input%%[![:space:]]*}"}"
-#   output="${output%"${output##*[![:space:]]}"}"
-#   echo "$output"
-# }
-
 trim_spaces() {
-    local input_str="$1"
-    # Remove leading spaces
-    input_str="${input_str#"${input_str%%[![:space:]]*}"}"
-    # Remove trailing spaces
-    input_str="${input_str%"${input_str##*[![:space:]]}"}"
-    echo "$input_str"
+  # remove leading and then trailing spaces
+  local input="$1"
+  local output="${input#"${input%%[![:space:]]*}"}"
+  output="${output%"${output##*[![:space:]]}"}"
+  echo "$output"
 }
 
 yes_no_question() {
