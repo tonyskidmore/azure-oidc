@@ -11,6 +11,7 @@ set_variables() {
   AZURE_OIDC_SUBJECT_IDENTIFIER="${AZURE_OIDC_SUBJECT_IDENTIFIER:-$oidc_subject_identifier}"
   AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO="${AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO:-$oidc_federated_credential_scenario}"
   AZURE_OIDC_MODE="${AZURE_OIDC_MODE:-$mode}"
+  AZURE_OIDC_DEBUG="${AZURE_OIDC_DEBUG:-$debug}"
   AZURE_OIDC_QUIET="${AZURE_OIDC_QUIET:-$quiet}"
   AZURE_OIDC_YES_FLAG="${AZURE_OIDC_YES_FLAG:-$yes}"
   AZURE_OIDC_JSON_OUTPUT="${AZURE_OIDC_JSON_OUTPUT:-$json_file_location}"
@@ -23,6 +24,7 @@ set_variables() {
 
     # shellcheck disable=SC2154
     printf "AZURE_OIDC_MODE: %s\n" "$AZURE_OIDC_MODE"
+    printf "AZURE_OIDC_DEBUG: %s\n" "$AZURE_OIDC_DEBUG"
     printf "AZURE_OIDC_QUIET: %s\n" "$AZURE_OIDC_QUIET"
     printf "AZURE_OIDC_YES_FLAG: %s\n" "$AZURE_OIDC_YES_FLAG"
     printf "AZURE_SUBSCRIPTION_ID: %s\n" "$AZURE_SUBSCRIPTION_ID"
@@ -52,52 +54,71 @@ create_oidc_app() {
   local count=""
   local az_ad_app_id=""
   local sp_id=""
+  local scope=""
 
   set_variables
 
   [[ "$AZURE_OIDC_QUIET" != "true" ]] && banner_message "Configuring Azure for GitHub OIDC"
 
   json=$(get_az_ad_app_by_name "$AZURE_OIDC_APP_NAME")
-  declare -p json
+  debug_output "$LINENO" "get_az_ad_app_by_name JSON" "$json"
   jq_check_json "$json" || exit_script "create_oidc_app: invalid JSON from get_az_ad_app_by_name $AZURE_OIDC_APP_NAME"  1
   count=$(jq_count_list "$json")
+  debug_output "$LINENO" "count" "$count"
 
   if [[ "$count" == "1" ]]
   then
     az_ad_app_id=$(jq_get_first_by_key_ref "$json" "appId")
+    debug_output "$LINENO" "az_ad_app_id" "$az_ad_app_id"
   else
     json=$(create_az_ad_app "$AZURE_OIDC_APP_NAME")
+    debug_output "$LINENO" "create_az_ad_app JSON" "$json"
     jq_check_json "$json" || exit_script "create_az_ad_app: invalid JSON from create_az_ad_app $AZURE_OIDC_APP_NAME"  1
-    az_ad_app_id=$(jq_get_first_by_key_ref "$json" "appId")
+    az_ad_app_id=$(jq_get_by_key_ref "$json" "appId")
+    debug_output "$LINENO" "az_ad_app_id" "$az_ad_app_id"
   fi
 
-  [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "OIDC app_id: %s\n" "$app_id"
+  [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "OIDC app_id: %s\n" "$az_ad_app_id"
 
   # shellcheck disable=SC2034
   [[ -n "$AZURE_OIDC_JSON_OUTPUT" ]] && assoc_array["app_id"]="$az_ad_app_id"
 
-  printf "az_ad_app_id: %s\n" "$az_ad_app_id"
-  declare -p az_ad_app_id
   json=$(get_az_ad_sp_id "$az_ad_app_id")
-  declare -p json
+  debug_output "$LINENO" "get_az_ad_sp_id JSON" "$json"
+
   jq_check_json "$json" || exit_script "create_oidc_app: invalid JSON from get_az_ad_sp_id $az_ad_app_id"  1
   count=$(jq_count_list "$json")
-  [[ "$count" == "1" ]] && sp_id=$(jq_get_by_key_ref "$json" "appId")
-  declare -p sp_id
-  exit 0
-  # TODO: refactor all azure-cli-functions to use JSON output
-  [[ -z "$sp_id" ]] && sp_id=$(create_az_ad_sp "$app_id")
+  debug_output "$LINENO" "count" "$count"
+
+  if [[ "$count" == "1" ]]
+  then
+    sp_id=$(jq_get_by_key_ref "$json" "appId")
+    debug_output "$LINENO" "sp_id" "$sp_id"
+  fi
+
+
+  if [[ -z "$sp_id" ]]
+  then
+    json=$(create_az_ad_sp "$az_ad_app_id")
+    debug_output "$LINENO" "create_az_ad_sp JSON" "$json"
+    sp_id=$(jq_get_by_key_ref "$json" "appId")
+    debug_output "$LINENO" "sp_id" "$sp_id"
+  fi
   # shellcheck disable=SC2034
   [[ -n "$AZURE_OIDC_JSON_OUTPUT" ]] && assoc_array["sp_id"]="$sp_id"
 
   [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "OIDC sp_id: %s\n" "$sp_id"
 
   scope="/subscriptions/${AZURE_SUBSCRIPTION_ID}"
+  debug_output "$LINENO" "scope" "$scope"
+
   if [[ -n "$AZURE_RESOURCE_GROUP_NAME" ]]
   then
     [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "Creating resource group if it does not exist: %s\n" "$AZURE_RESOURCE_GROUP_NAME"
-    create_az_group "$AZURE_RESOURCE_GROUP_NAME" "$AZURE_RESOURCE_GROUP_LOCATION" "$AZURE_RESOURCE_GROUP_TAGS">/dev/null
+    json=$(create_az_group "$AZURE_RESOURCE_GROUP_NAME" "$AZURE_RESOURCE_GROUP_LOCATION" "$AZURE_RESOURCE_GROUP_TAGS")
+    debug_output "$LINENO" "create_az_group JSON" "$json"
     scope="$scope/resourceGroups/${AZURE_RESOURCE_GROUP_NAME}"
+    debug_output "$LINENO" "scope" "$scope"
     [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "scope: %s\n" "$scope"
   fi
 
@@ -107,9 +128,10 @@ create_oidc_app() {
 
       role_assignment=$(trim_spaces "$role")
 
-      create_az_role_assignment_sp "$role_assignment" \
+      json=$(create_az_role_assignment_sp "$role_assignment" \
                                     "$AZURE_SUBSCRIPTION_ID" \
-                                    "$sp_id" "$scope" >/dev/null
+                                    "$sp_id" "$scope")
+      debug_output "$LINENO" "create_az_role_assignment_sp JSON" "$role_assignment"
     done
   done <<< "$AZURE_OIDC_ROLE_ASSIGNMENT"
   [[ -z "$AZURE_OIDC_ROLE_ASSIGNMENT" ]]  && echo "INFORMATION: no RBAC assignments specified, you will need to configure any RBAC requirements in Azure"
@@ -117,12 +139,18 @@ create_oidc_app() {
   while IFS=, read -ra subjects; do
     for subject in "${subjects[@]}"; do
       fc_subject=$(trim_spaces "$subject")
+      debug_output "$LINENO" "fc_subject" "$fc_subject"
       [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "Checking federated credential: %s\n" "$fc_subject"
       check_github_oidc_subject_format "$fc_subject"
       subject_name=$(replace_colon_and_slash "$fc_subject")
+      debug_output "$LINENO" "subject_name" "$fc_subject"
 
       params=$(get_fed_cred_params "$fc_subject" "$subject_name")
-      fed_cred_id=$(get_az_ad_app_fed_cred_id "$app_id" "$fc_subject") >/dev/null
+      debug_output "$LINENO" "params" "$params"
+      json=$(get_az_ad_app_fed_cred_id "$app_id" "$fc_subject")
+      debug_output "$LINENO" "get_az_ad_app_fed_cred_id JSON" "$json"
+      exit 0
+      fed_cred_id=$(jq_get_first_by_key_ref "$json" "appId")
 
 
       if [[ -z "$fed_cred_id" ]]
@@ -152,19 +180,20 @@ delete_oidc_app() {
   banner_message "Deleting Azure GitHub OIDC configuration"
 
   json=$(get_az_ad_app_by_name "$AZURE_OIDC_APP_NAME")
+  debug_output "$LINENO" "get_az_ad_app_by_name JSON" "$json"
   jq_check_json "$json" || exit_script "delete_oidc_app: invalid JSON from get_az_ad_app_by_name $AZURE_OIDC_APP_NAME"  1
   count=$(jq_count_list "$json")
-
-  declare -p json
-  declare -p az_ad_app_id
-  declare -p count
 
   if [[ "$count" == "1" ]]
   then
     az_ad_app_id=$(jq_get_first_by_key_ref "$json" "appId")
     printf "Deleting OIDC app %s with ID %s\n" "$AZURE_OIDC_APP_NAME" "$az_ad_app_id"
     [[ "$AZURE_OIDC_YES_FLAG" != "true" ]] && delete_app=$(yes_no_question "Would you like to delete this app?")
-    [[ "$delete_app" == "yes" || "$AZURE_OIDC_YES_FLAG" == "true" ]] && delete_az_ad_app "$az_ad_app_id"
+    if [[ "$delete_app" == "yes" || "$AZURE_OIDC_YES_FLAG" == "true" ]]
+    then
+      json=$(delete_az_ad_app "$az_ad_app_id")
+      debug_output "$LINENO" "delete_az_group JSON" "$json"
+    fi
   fi
 
   if [[ -n "$AZURE_RESOURCE_GROUP_NAME" ]]
@@ -173,8 +202,22 @@ delete_oidc_app() {
     if [[ "$delete_rg" == "yes" || "$AZURE_OIDC_YES_FLAG" == "true"  ]]
     then
       printf "Deleting resource group: %s\n" "$AZURE_RESOURCE_GROUP_NAME"
-      delete_az_group "$AZURE_RESOURCE_GROUP_NAME"
+      json=$(delete_az_group "$AZURE_RESOURCE_GROUP_NAME")
+      debug_output "$LINENO" "delete_az_group JSON" "$json"
     fi
   fi
 
+}
+
+debug_output() {
+  local lineno="$1"
+  local message="$2"
+  local value="$3"
+  local calling_lineno=""
+
+  if [[ "$AZURE_OIDC_DEBUG" == "true" ]]
+  then
+    calling_lineno=$((lineno - 1))
+    printf "DEBUG: line %s of %s: %s: \n%s\n" "$calling_lineno" "${FUNCNAME[1]}" "$message" "$value"
+  fi
 }

@@ -38,12 +38,11 @@ create_az_ad_app_fed_cred() {
 
 create_az_ad_sp() {
   local az_ad_app_id="$1"
-  local az_ad_sp_id=""
-  az_ad_sp_id=$(az ad sp create \
-                  --id "$az_ad_app_id" \
-                  --query id \
-                  --output tsv)
-  echo "$az_ad_sp_id"
+
+  az ad sp create \
+    --id "$az_ad_app_id" \
+    --output json
+
 }
 
 create_az_group() {
@@ -65,7 +64,8 @@ create_az_group() {
   az group create \
     --name "$az_resource_group_name" \
     --location "$az_resource_group_location" \
-    --tags "${az_resource_group_tags_array[@]}"
+    --tags "${az_resource_group_tags_array[@]}" \
+    --output json
 }
 
 
@@ -79,12 +79,15 @@ create_az_role_assignment_sp() {
     --subscription "$az_role_assignment_subscription_id" \
     --assignee-object-id  "$az_role_assignment_object_id" \
     --assignee-principal-type ServicePrincipal \
-    --scope "$az_role_assignment_scope"
+    --scope "$az_role_assignment_scope" \
+    --output json
 }
 
 delete_az_ad_app() {
   local az_ad_app_id="$1"
-  az ad app delete --id "$az_ad_app_id"
+  az ad app delete \
+    --id "$az_ad_app_id" \
+    --output json
 }
 
 
@@ -93,7 +96,8 @@ delete_az_group() {
   az group delete \
     --name "$az_resource_group_name" \
     --yes \
-    --no-wait
+    --no-wait \
+    --output json
 }
 
 # get_az_ad_app_by_name() {
@@ -117,12 +121,10 @@ get_az_ad_app_by_name() {
 get_az_ad_app_fed_cred_id() {
   local az_ad_app_id="$1"
   local subj="$2"
-  local az_ad_app_fed_cred_id=""
-  az_ad_app_fed_cred_id=$(az ad app federated-credential list \
-                              --id "$az_ad_app_id" \
-                              --query "[?subject=='$subj'].id" \
-                              --output tsv)
-  echo "$az_ad_app_fed_cred_id"
+  az ad app federated-credential list \
+    --id "$az_ad_app_id" \
+    --query "[?subject=='$subj'].id" \
+    --output json
 }
 
 get_az_ad_sp_id() {

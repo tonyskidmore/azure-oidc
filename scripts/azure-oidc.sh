@@ -10,9 +10,10 @@ declare -A assoc_array
 usage () {
   cat <<END
 
-Usage : ${script_name} [-h] -a <oidc_app_name> -e <entra_tenant_id> -i <oidc_subject_identifier> [-f <oidc_federated_credential_scenario>] [-g <oidc_resource_group_name>] [-j <json_file_location>] [-l <oidc_resource_group_location>] -m <mode> [-r <oidc_role_assignment>] [-t <oidc_resource_group_tags>] [-q] [-y]
+Usage : ${script_name} [-h] -a <oidc_app_name> [-d] -e <entra_tenant_id> -i <oidc_subject_identifier> [-f <oidc_federated_credential_scenario>] [-g <oidc_resource_group_name>] [-j <json_file_location>] [-l <oidc_resource_group_location>] -m <mode> [-r <oidc_role_assignment>] [-t <oidc_resource_group_tags>] [-q] [-y]
 
   -a = Azure AD app registration name
+  -d = debug mode
   -e = Entra Tenant ID
   -i = OIDC subject identifier
   -f = Federated credential scenario
@@ -37,12 +38,16 @@ END
 mode="${AZURE_OIDC_MODE:-create}"
 oidc_federated_credential_scenario="GitHub"
 
-while getopts "a:e:f:g:hj:i:l:m:r:s:t:qy" name
+while getopts "a:de:f:g:hj:i:l:m:r:s:t:qy" name
 do
   case ${name} in
   a)
         # shellcheck disable=SC2034
         oidc_app_name="${OPTARG}"
+        ;;
+  d)
+        # shellcheck disable=SC2034
+        debug="true"
         ;;
   e)
         # shellcheck disable=SC2034
