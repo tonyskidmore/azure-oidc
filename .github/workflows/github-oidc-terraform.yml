@@ -2,9 +2,6 @@
 
 name: GitHub Azure OpenID Terraform
 on:
-  push:
-    branches:
-      - terraform
   workflow_dispatch:
 
 permissions:
