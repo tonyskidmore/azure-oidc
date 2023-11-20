@@ -28,7 +28,7 @@ exit_script() {
 get_fed_cred_params() {
   local subj="$1"
   local subj_name="$2"
-  echo "{\"name\": \"$subj_name\", \"issuer\": \"https://token.actions.githubusercontent.com\", \"subject\": \"$subj\", \"description\": \"GitHub to Azure OIDC\", \"audiences\": [\"api://AzureADTokenExchange\"]}"
+  echo "{\"name\": \"$subj_name\", \"issuer\": \"https://token.actions.githubusercontent.com\", \"subject\": \"$subj\", \"description\": \"${AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO} to Azure OIDC\", \"audiences\": [\"api://AzureADTokenExchange\"]}"
 }
 
 replace_colon_and_slash() {
@@ -38,12 +38,21 @@ replace_colon_and_slash() {
     echo "$output"
 }
 
+# trim_spaces() {
+#   # remove leading and then trailing spaces
+#   local input="$1"
+#   local output="${input#"${input%%[![:space:]]*}"}"
+#   output="${output%"${output##*[![:space:]]}"}"
+#   echo "$output"
+# }
+
 trim_spaces() {
-  # remove leading and then trailing spaces
-  local input="$1"
-  local output="${input#"${input%%[![:space:]]*}"}"
-  output="${output%"${output##*[![:space:]]}"}"
-  echo "$output"
+    local input_str="$1"
+    # Remove leading spaces
+    input_str="${input_str#"${input_str%%[![:space:]]*}"}"
+    # Remove trailing spaces
+    input_str="${input_str%"${input_str##*[![:space:]]}"}"
+    echo "$input_str"
 }
 
 yes_no_question() {

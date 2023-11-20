@@ -54,7 +54,9 @@ create_oidc_app() {
   local count=""
   local az_ad_app_id=""
   local sp_id=""
-  local scope=""
+  local sub_scope=""
+  local rg_scope=""
+  local full_scope=""
 
   set_variables
 
@@ -92,7 +94,7 @@ create_oidc_app() {
 
   if [[ "$count" == "1" ]]
   then
-    sp_id=$(jq_get_by_key_ref "$json" "appId")
+    sp_id=$(jq_get_first_by_key_ref "$json" "id")
     debug_output "$LINENO" "sp_id" "$sp_id"
   fi
 
@@ -101,7 +103,7 @@ create_oidc_app() {
   then
     json=$(create_az_ad_sp "$az_ad_app_id")
     debug_output "$LINENO" "create_az_ad_sp JSON" "$json"
-    sp_id=$(jq_get_by_key_ref "$json" "appId")
+    sp_id=$(jq_get_by_key_ref "$json" "id")
     debug_output "$LINENO" "sp_id" "$sp_id"
   fi
   # shellcheck disable=SC2034
@@ -109,29 +111,31 @@ create_oidc_app() {
 
   [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "OIDC sp_id: %s\n" "$sp_id"
 
-  scope="/subscriptions/${AZURE_SUBSCRIPTION_ID}"
-  debug_output "$LINENO" "scope" "$scope"
+  sub_scope="/subscriptions/${AZURE_SUBSCRIPTION_ID}"
+  debug_output "$LINENO" "sub_scope" "$sub_scope"
 
   if [[ -n "$AZURE_RESOURCE_GROUP_NAME" ]]
   then
     [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "Creating resource group if it does not exist: %s\n" "$AZURE_RESOURCE_GROUP_NAME"
     json=$(create_az_group "$AZURE_RESOURCE_GROUP_NAME" "$AZURE_RESOURCE_GROUP_LOCATION" "$AZURE_RESOURCE_GROUP_TAGS")
     debug_output "$LINENO" "create_az_group JSON" "$json"
-    scope="$scope/resourceGroups/${AZURE_RESOURCE_GROUP_NAME}"
-    debug_output "$LINENO" "scope" "$scope"
-    [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "scope: %s\n" "$scope"
+    rg_scope="/resourceGroups/${AZURE_RESOURCE_GROUP_NAME}"
+    debug_output "$LINENO" "rg_scope" "$rg_scope"
   fi
+
+  full_scope="${sub_scope}${rg_scope}"
+  debug_output "$LINENO" "full_scope" "$full_scope"
 
   while IFS=, read -ra roles; do
     for role in "${roles[@]}"; do
-      [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "Setting %s RBAC role assignment to the scope of %s\n" "$role" "$scope"
+      [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "Setting %s RBAC role assignment to the scope of %s\n" "$role" "$full_scope"
 
       role_assignment=$(trim_spaces "$role")
+      debug_output "$LINENO" "role_assignment" "$role_assignment"
+      declare -p role_assignment
 
-      json=$(create_az_role_assignment_sp "$role_assignment" \
-                                    "$AZURE_SUBSCRIPTION_ID" \
-                                    "$sp_id" "$scope")
-      debug_output "$LINENO" "create_az_role_assignment_sp JSON" "$role_assignment"
+      json=$(create_az_role_assignment_sp "$role_assignment" "$AZURE_SUBSCRIPTION_ID" "$sp_id" "$full_scope")
+      debug_output "$LINENO" "create_az_role_assignment_sp JSON" "$json"
     done
   done <<< "$AZURE_OIDC_ROLE_ASSIGNMENT"
   [[ -z "$AZURE_OIDC_ROLE_ASSIGNMENT" ]]  && echo "INFORMATION: no RBAC assignments specified, you will need to configure any RBAC requirements in Azure"
@@ -147,16 +151,23 @@ create_oidc_app() {
 
       params=$(get_fed_cred_params "$fc_subject" "$subject_name")
       debug_output "$LINENO" "params" "$params"
-      json=$(get_az_ad_app_fed_cred_id "$app_id" "$fc_subject")
+      json=$(get_az_ad_app_fed_cred_id "$az_ad_app_id" "$fc_subject")
       debug_output "$LINENO" "get_az_ad_app_fed_cred_id JSON" "$json"
-      exit 0
-      fed_cred_id=$(jq_get_first_by_key_ref "$json" "appId")
 
+      fed_cred_id=$(jq_get_first_by_key_ref "$json" "id")
+      debug_output "$LINENO" "fed_cred_id" "$fed_cred_id"
+      fed_cred_subject=$(jq_get_first_by_key_ref "$json" "subject")
+      debug_output "$LINENO" "fed_cred_subject" "$fed_cred_subject"
 
       if [[ -z "$fed_cred_id" ]]
       then
         [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "Creating federated credential: %s\n" "$fc_subject"
-        IFS=, read -r fed_cred_id fed_cred_subject <<< "$(create_az_ad_app_fed_cred "$app_id" "$params")"
+        json=$(create_az_ad_app_fed_cred "$az_ad_app_id" "$params")
+        debug_output "$LINENO" "create_az_ad_app_fed_cred JSON" "$json"
+        fed_cred_id=$(jq_get_by_key_ref "$json" "id")
+        debug_output "$LINENO" "fed_cred_id" "$fed_cred_id"
+        fed_cred_subject=$(jq_get_by_key_ref "$json" "subject")
+        debug_output "$LINENO" "fed_cred_subject" "$fed_cred_subject"
       fi
       # shellcheck disable=SC2034
       [[ -n "$AZURE_OIDC_JSON_OUTPUT" ]] && assoc_array["fed_cred_id"]="$fed_cred_id"
