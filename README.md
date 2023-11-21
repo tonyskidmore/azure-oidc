@@ -127,12 +127,19 @@ export AZURE_OIDC_YES_FLAG="true"
 ````
 ## Azure DevOps examples (not yet implemented)
 
+| Field	             | Description                                                                            |
+|--------------------|----------------------------------------------------------------------------------------|
+| Issuer	           | Enter https://app.vstoken.visualstudio.com/\<unique-identifier\>                       |
+| Subject identifier | Specify sc://\<Azure DevOps organization\>/\<Project name\>/<Service Connection name\> |
+|                    | You do not need to have created the service connection.                                |
+
+
 ````bash
 
 ./scripts/azure-oidc.sh \
   -a azure-ado-oidc \
   -u https://vstoken.dev.azure.com/e1538f7b-5100-4fa8-8a72-5ea2518261e2 \
-  -i "sc://tonyskidmore/oidc/azurerm-oidc"
+  -i sc://tonyskidmore/oidc/azurerm-oidc
 
 ````
 
@@ -149,10 +156,13 @@ export AZURE_OIDC_YES_FLAG="true"
 
 ## Azure and Azure DevOps references
 
+[Manually configure Azure Resource Manager workload identity service connections](https://learn.microsoft.com/en-us/azure/devops/pipelines/release/configure-workload-identity?view=azure-devops)  
+
 [Workload identity federation](https://learn.microsoft.com/en-us/entra/workload-id/workload-identity-federation)  
 
 [Introduction to Azure DevOps Workload identity federation (OIDC) with Terraform](https://techcommunity.microsoft.com/t5/azure-devops-blog/introduction-to-azure-devops-workload-identity-federation-oidc/ba-p/3908687)  
 
+[Use service principals & managed identities](https://learn.microsoft.com/en-us/azure/devops/integrate/get-started/authentication/service-principal-managed-identity?view=azure-devops)  
 
 ## Terraform references
 
