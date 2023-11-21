@@ -129,8 +129,8 @@ export AZURE_OIDC_YES_FLAG="true"
 
 | Field	             | Description                                                                            |
 |--------------------|----------------------------------------------------------------------------------------|
-| Issuer	           | Enter https://app.vstoken.visualstudio.com/\<unique-identifier\>                       |
-| Subject identifier | Specify sc://\<Azure DevOps organization\>/\<Project name\>/<Service Connection name\> |
+| Issuer	           | Enter https://app.vstoken.visualstudio.com/_unique-identifier_                         |
+| Subject identifier | Specify sc://_azure-devops-organization_/_project-name_/_service-connection-name_      |
 |                    | You do not need to have created the service connection.                                |
 
 
