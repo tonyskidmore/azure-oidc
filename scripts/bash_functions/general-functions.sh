@@ -34,7 +34,7 @@ check_oidc_subject_format() {
   case "$AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO" in
       "GitHub" ) check_github_oidc_subject_format "$subject";
               ;;
-      "AzureDevOps" ) check_ado_oidc_subject_format ;
+      "AzureDevOps" ) check_ado_oidc_subject_format "$subject";
               ;;
       * )     echo "Invalid AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO: $AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO";
               exit 1

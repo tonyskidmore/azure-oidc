@@ -101,7 +101,7 @@ export AZURE_OIDC_ROLE_ASSIGNMENT="Contributor,Storage Blob Data Contributor"
 
 # unprompted deletion of the app and resource group using environment variables
 export AZURE_OIDC_APP_NAME="azure-github-oidc"
-export AZURE_RESOURCE_GROUP_NAME="rg-azure-oidc"
+export AZURE_RESOURCE_GROUP_NAME="rg-azure-github-oidc"
 export AZURE_OIDC_MODE="delete"
 export AZURE_OIDC_YES_FLAG="true"
 ./scripts/azure-oidc.sh
@@ -113,7 +113,8 @@ export AZURE_OIDC_YES_FLAG="true"
   -r "Contributor" \
   -i "repo:tonyskidmore/azure-oidc:environment:dev" \
   -j "$PWD/dev-oidc-app.json" \
-  -t "environment=dev cost_centre=123"
+  -t "environment=dev cost_centre=123" \
+  -d
 
 ./scripts/azure-oidc.sh \
   -a azure-github-oidc \
