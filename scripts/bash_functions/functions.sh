@@ -7,6 +7,7 @@ set_variables() {
   AZURE_RESOURCE_GROUP_LOCATION="${AZURE_RESOURCE_GROUP_LOCATION:-$oidc_resource_group_location}"
   AZURE_RESOURCE_GROUP_TAGS="${AZURE_RESOURCE_GROUP_TAGS:-$oidc_resource_group_tags}"
   AZURE_OIDC_APP_NAME="${AZURE_OIDC_APP_NAME:-$oidc_app_name}"
+  AZURE_OIDC_ISSUER_URL="${AZURE_OIDC_ISSUER_URL:-$oidc_issuer_url}"
   AZURE_OIDC_ROLE_ASSIGNMENT="${AZURE_OIDC_ROLE_ASSIGNMENT:-$oidc_role_assignment}"
   AZURE_OIDC_SUBJECT_IDENTIFIER="${AZURE_OIDC_SUBJECT_IDENTIFIER:-$oidc_subject_identifier}"
   AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO="${AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO:-$oidc_federated_credential_scenario}"
@@ -36,6 +37,7 @@ set_variables() {
     printf "AZURE_OIDC_ROLE_ASSIGNMENT: %s\n" "$AZURE_OIDC_ROLE_ASSIGNMENT"
     printf "AZURE_OIDC_JSON_OUTPUT: %s\n" "$AZURE_OIDC_JSON_OUTPUT"
     printf "AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO: %s\n" "$AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO"
+    printf "AZURE_OIDC_ISSUER_URL: %s\n\n" "$AZURE_OIDC_ISSUER_URL"
     printf "AZURE_OIDC_SUBJECT_IDENTIFIER: %s\n\n" "$AZURE_OIDC_SUBJECT_IDENTIFIER"
   fi
 
@@ -144,11 +146,11 @@ create_oidc_app() {
       fc_subject=$(trim_spaces "$subject")
       debug_output "$LINENO" "fc_subject" "$fc_subject"
       [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "Checking federated credential: %s\n" "$fc_subject"
-      check_github_oidc_subject_format "$fc_subject"
+      check_oidc_subject_format "$fc_subject"
       subject_name=$(replace_colon_and_slash "$fc_subject")
       debug_output "$LINENO" "subject_name" "$fc_subject"
 
-      params=$(get_fed_cred_params "$fc_subject" "$subject_name")
+      params=$(get_fed_cred_params "$subject_name" "$AZURE_OIDC_ISSUER_URL" "$fc_subject" )
       debug_output "$LINENO" "params" "$params"
       json=$(get_az_ad_app_fed_cred_id "$az_ad_app_id" "$fc_subject")
       debug_output "$LINENO" "get_az_ad_app_fed_cred_id JSON" "$json"

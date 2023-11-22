@@ -10,7 +10,7 @@ declare -A assoc_array
 usage () {
   cat <<END
 
-Usage : ${script_name} [-h] -a <oidc_app_name> [-d] -e <entra_tenant_id> -i <oidc_subject_identifier> [-f <oidc_federated_credential_scenario>] [-g <oidc_resource_group_name>] [-j <json_file_location>] [-l <oidc_resource_group_location>] -m <mode> [-r <oidc_role_assignment>] [-t <oidc_resource_group_tags>] [-q] [-y]
+Usage : ${script_name} [-h] -a <oidc_app_name> [-d] -e <entra_tenant_id> -i <oidc_subject_identifier> [-f <oidc_federated_credential_scenario>] [-g <oidc_resource_group_name>] [-j <json_file_location>] [-l <oidc_resource_group_location>] -m <mode> [-r <oidc_role_assignment>] [-t <oidc_resource_group_tags>] [-q] [-u oidc_issuer_url] [-y]
 
   -a = Azure AD app registration name
   -d = debug mode
@@ -25,6 +25,7 @@ Usage : ${script_name} [-h] -a <oidc_app_name> [-d] -e <entra_tenant_id> -i <oid
   -r = Azure role assignment for OIDC scope
   -t = Azure resource group for OIDC tags
   -q = quiet mode
+  -u = OIDC issuer URL
   -y = Answer yes to prompting to force deletion
 
 Purpose:
@@ -35,10 +36,12 @@ END
   exit 0
 }
 
+# set defaults
 mode="${AZURE_OIDC_MODE:-create}"
-oidc_federated_credential_scenario="GitHub"
+oidc_federated_credential_scenario="${AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO:-GitHub}"
+oidc_issuer_url="${AZURE_OIDC_ISSUER_URL:-https://token.actions.githubusercontent.com}"
 
-while getopts "a:de:f:g:hj:i:l:m:r:s:t:qy" name
+while getopts "a:de:f:g:hj:i:l:m:r:s:t:qu:y" name
 do
   case ${name} in
   a)
@@ -95,6 +98,10 @@ do
   q)
         # shellcheck disable=SC2034
         quiet="true"
+        ;;
+  u)
+        # shellcheck disable=SC2034
+        oidc_issuer_url="${OPTARG}"
         ;;
   y)
         # shellcheck disable=SC2034
