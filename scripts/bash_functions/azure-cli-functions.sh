@@ -120,6 +120,13 @@ get_az_subscription_id() {
   jq -r '.id' <<< "$az_account"
 }
 
+get_az_subscription_name() {
+  local az_account=""
+  az_account=$(az account show \
+                 --output json)
+  jq -r '.name' <<< "$az_account"
+}
+
 get_az_tenant_id() {
   local az_account=""
   az_account=$(az account show \

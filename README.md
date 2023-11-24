@@ -72,25 +72,19 @@ az login
   -t "environment=DR" \
   -l ukwest
 
-# Create app with multiple RBAC on defined resource group and multiple federated credentials
-./scripts/azure-oidc.sh \
-  -a azure-github-oidc \
-  -g rg-azure-github-oidc \
-  -r Contributor \
-  -i repo:tonyskidmore/azure-github-oidc:pull_request,repo:tonyskidmore/azure-oidc:ref:refs/heads/main,repo:tonyskidmore/azure-github-oidc:environment:dev,repo:tonyskidmore/azure-oidc:ref:refs/tags/v1.2.32
-
-# prompted deletion of the app and resource group
-./scripts/azure-oidc.sh \
-  -a azure-github-oidc \
-  -g rg-azure-github-oidc \
-  -m delete
-
 # unprompted deletion of the app and resource group
 ./scripts/azure-oidc.sh \
   -a azure-github-oidc-dr \
   -g rg-azure-github-oidc-dr \
   -m delete \
   -y
+
+# Create app with multiple RBAC on defined resource group and multiple federated credentials
+./scripts/azure-oidc.sh \
+  -a azure-github-oidc \
+  -g rg-azure-github-oidc \
+  -r Contributor \
+  -i repo:tonyskidmore/azure-github-oidc:pull_request,repo:tonyskidmore/azure-oidc:ref:refs/heads/main,repo:tonyskidmore/azure-github-oidc:environment:dev,repo:tonyskidmore/azure-oidc:ref:refs/tags/v1.2.32
 
 # use environment variables as opposed to command line arguments
 export AZURE_OIDC_APP_NAME="azure-github-oidc"
@@ -125,6 +119,12 @@ export AZURE_OIDC_YES_FLAG="true"
   -t "environment=dev cost_centre=123" \
   -q
 
+# prompted deletion of the app and resource group
+./scripts/azure-oidc.sh \
+  -a azure-github-oidc \
+  -g rg-azure-github-oidc \
+  -m delete
+
 ````
 ## Azure DevOps examples (not yet implemented)
 
@@ -134,13 +134,66 @@ export AZURE_OIDC_YES_FLAG="true"
 | Subject identifier | Specify sc://_azure-devops-organization_/_project-name_/_service-connection-name_      |
 |                    | You do not need to have created the service connection.                                |
 
-
 ````bash
 
+# Create app with federated credential and no resource group or RBAC
 ./scripts/azure-oidc.sh \
-  -a azure-ado-oidc \
+  -a app-azure-ado-oidc \
   -u https://vstoken.dev.azure.com/e1538f7b-5100-4fa8-8a72-5ea2518261e2 \
-  -i sc://tonyskidmore/oidc/azurerm-oidc
+  -i sc://tonyskidmore/oidc/azurerm-oidc \
+  -f AzureDevOps
+
+# Create app with federated credential
+# app registration named app-azure-ado-oidc
+# issuer url for vstoken.dev.azure.com and the ADO org ID
+# specify the subject identifier for the ADO org, project and service connection name
+# specify a resource group and RBAC to assign
+# use the AzureDevOps federation subject scenario
+# create tags on the resource group
+# output as JSON (screen and file)
+# use debug output
+./scripts/azure-oidc.sh \
+  -a app-azure-ado-oidc \
+  -u https://vstoken.dev.azure.com/2f2bb056-f9a0-4980-950d-aafc5498bb54 \
+  -i sc://kainos-poc/oidc/azurerm-oidc \
+  -g rg-azure-ado-oidc \
+  -r Contributor \
+  -f AzureDevOps \
+  -t "environment=dev iac=az-cli" \
+  -j ado-oidc-app.json \
+  -d
+
+# same as above but just specify the ADO org ID rather than the issuer url
+# ./scripts/azure-oidc.sh \
+#   -a app-azure-ado-oidc \
+#   -o 2f2bb056-f9a0-4980-950d-aafc5498bb54 \
+#   -i sc://kainos-poc/oidc/azurerm-oidc \
+#   -g rg-azure-ado-oidc \
+#   -r Contributor \
+#   -f AzureDevOps \
+#   -t "environment=dev iac=az-cli" \
+#   -j ado-oidc-app.json \
+#   -d
+
+# create OIDC based service connection in Azure DevOps
+# export AZ_SUBSCRIPTION_ID="" # azure_subscription_name
+# export AZ_SUBSCRIPTION_NAME="" # azure_subscription_name
+# export AZ_TENANT_ID="" # azure_tenant_id
+# export AZ_CLIENT_ID="" # app_id
+# export AZDO_ORG_SERVICE_URL=""
+# export AZDO_ORG_SERVICE_ID=""
+# export AZDO_PROJECT_ID=""
+# export AZDO_PROJECT_NAME=""
+# export AZURE_DEVOPS_EXT_PAT=""
+# export AZDO_SERVICE_CONNECTION_NAME="azurerm-oidc"
+scripts/ado-create-oidc-sc.sh | jq
+
+
+# delete the app and the resource group
+./scripts/azure-oidc.sh \
+  -a app-azure-ado-oidc \
+  -g rg-azure-ado-oidc \
+  -m delete
 
 ````
 

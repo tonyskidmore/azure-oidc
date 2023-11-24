@@ -1,7 +1,8 @@
 #!/bin/bash
 
 set_variables() {
-  AZURE_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID:-${oidc_subscription:-$(get_az_subscription_id)}}"
+  AZURE_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID:-${oidc_subscription_id:-$(get_az_subscription_id)}}"
+  AZURE_SUBSCRIPTION_NAME="${AZURE_SUBSCRIPTION_NAME:-${oidc_subscription_name:-$(get_az_subscription_name)}}"
   AZURE_TENANT_ID="${AZURE_TENANT_ID:-$(get_az_tenant_id)}"
   AZURE_RESOURCE_GROUP_NAME="${AZURE_RESOURCE_GROUP_NAME:-$oidc_resource_group_name}"
   AZURE_RESOURCE_GROUP_LOCATION="${AZURE_RESOURCE_GROUP_LOCATION:-$oidc_resource_group_location}"
@@ -14,6 +15,7 @@ set_variables() {
   AZURE_OIDC_MODE="${AZURE_OIDC_MODE:-$mode}"
   AZURE_OIDC_DEBUG="${AZURE_OIDC_DEBUG:-$debug}"
   AZURE_OIDC_QUIET="${AZURE_OIDC_QUIET:-$quiet}"
+  AZURE_OIDC_ORGANIZATION="${AZURE_OIDC_ORGANIZATION:-$oidc_organization}"
   AZURE_OIDC_YES_FLAG="${AZURE_OIDC_YES_FLAG:-$yes}"
   AZURE_OIDC_JSON_OUTPUT="${AZURE_OIDC_JSON_OUTPUT:-$json_file_location}"
 
@@ -28,7 +30,9 @@ set_variables() {
     printf "AZURE_OIDC_DEBUG: %s\n" "$AZURE_OIDC_DEBUG"
     printf "AZURE_OIDC_QUIET: %s\n" "$AZURE_OIDC_QUIET"
     printf "AZURE_OIDC_YES_FLAG: %s\n" "$AZURE_OIDC_YES_FLAG"
+    printf "AZURE_OIDC_ORGANIZATION: %s\n" "$AZURE_OIDC_ORGANIZATION"
     printf "AZURE_SUBSCRIPTION_ID: %s\n" "$AZURE_SUBSCRIPTION_ID"
+    printf "AZURE_SUBSCRIPTION_NAME: %s\n" "$AZURE_SUBSCRIPTION_NAME"
     printf "AZURE_TENANT_ID: %s\n" "$AZURE_TENANT_ID"
     printf "AZURE_RESOURCE_GROUP_NAME: %s\n" "$AZURE_RESOURCE_GROUP_NAME"
     printf "AZURE_RESOURCE_GROUP_LOCATION: %s\n" "$AZURE_RESOURCE_GROUP_LOCATION"
@@ -37,7 +41,7 @@ set_variables() {
     printf "AZURE_OIDC_ROLE_ASSIGNMENT: %s\n" "$AZURE_OIDC_ROLE_ASSIGNMENT"
     printf "AZURE_OIDC_JSON_OUTPUT: %s\n" "$AZURE_OIDC_JSON_OUTPUT"
     printf "AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO: %s\n" "$AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO"
-    printf "AZURE_OIDC_ISSUER_URL: %s\n\n" "$AZURE_OIDC_ISSUER_URL"
+    printf "AZURE_OIDC_ISSUER_URL: %s\n" "$AZURE_OIDC_ISSUER_URL"
     printf "AZURE_OIDC_SUBJECT_IDENTIFIER: %s\n\n" "$AZURE_OIDC_SUBJECT_IDENTIFIER"
   fi
 
@@ -47,6 +51,7 @@ set_variables() {
     assoc_array["oidc_app_name"]="$AZURE_OIDC_APP_NAME"
     assoc_array["resource_group_name"]="$AZURE_RESOURCE_GROUP_NAME"
     assoc_array["azure_subscription_id"]="$AZURE_SUBSCRIPTION_ID"
+    assoc_array["azure_subscription_name"]="$AZURE_SUBSCRIPTION_NAME"
     assoc_array["azure_tenant_id"]="$AZURE_TENANT_ID"
   fi
 }
