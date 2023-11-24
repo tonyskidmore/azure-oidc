@@ -10,9 +10,10 @@ declare -A assoc_array
 usage () {
   cat <<END
 
-Usage : ${script_name} [-h] -a <oidc_app_name> [-d] [-e <entra_tenant_id>] [-f oidc_federated_credential_scenario ] -i <oidc_subject_identifier> [-f <oidc_federated_credential_scenario>] [-g <oidc_resource_group_name>] [-j <json_file_location>] [-l <oidc_resource_group_location>] [-n <oidc_subscription_name>] [-m <mode>] [-o <oidc_organization>] [-q] [-r <oidc_role_assignment>] [-s <oidc_subscription_id>] [-t <oidc_resource_group_tags>] [-u oidc_issuer_url] [-y]
+Usage : ${script_name} [-h] -a <oidc_app_name> [-c <oidc_service_connection_name>] [-d] [-e <entra_tenant_id>] [-f oidc_federated_credential_scenario ] -i <oidc_subject_identifier> [-f <oidc_federated_credential_scenario>] [-g <oidc_resource_group_name>] [-j <json_file_location>] [-l <oidc_resource_group_location>] [-n <oidc_subscription_name>] [-m <mode>] [-o <oidc_organization>] [-p <oidc_project_name>] [-q] [-r <oidc_role_assignment>] [-s <oidc_subscription_id>] [-t <oidc_resource_group_tags>] [-u oidc_issuer_url] [-y]
 
   -a = Azure AD app registration name
+  -c = Azure DevOps service connection name
   -d = debug mode
   -e = Entra Tenant ID - defalts to current subscription
   -f = Federated credential scenario - defaluts to GitHub
@@ -24,6 +25,7 @@ Usage : ${script_name} [-h] -a <oidc_app_name> [-d] [-e <entra_tenant_id>] [-f o
   -m = Mode of operation - defaults to "create"
   -n = Azure subscription name for OIDC
   -o = Organization e.g. Azure DevOps organization name
+  -p = Project e.g. Azure DevOps project name
   -q = quiet mode
   -r = Azure role assignment for OIDC scope
   -s = Azure subscription ID for OIDC
@@ -44,12 +46,16 @@ mode="${AZURE_OIDC_MODE:-create}"
 oidc_federated_credential_scenario="${AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO:-GitHub}"
 oidc_issuer_url="${AZURE_OIDC_ISSUER_URL:-https://token.actions.githubusercontent.com}"
 
-while getopts "a:de:f:g:hj:i:l:m:n:o:r:s:t:qu:y" name
+while getopts "a:c:de:f:g:hj:i:l:m:n:o:p:r:s:t:qu:y" name
 do
   case ${name} in
   a)
         # shellcheck disable=SC2034
         oidc_app_name="${OPTARG}"
+        ;;
+  c)
+        # shellcheck disable=SC2034
+        oidc_service_connection_name="${OPTARG}"
         ;;
   d)
         # shellcheck disable=SC2034
@@ -93,6 +99,10 @@ do
   o)
         # shellcheck disable=SC2034
         oidc_organization="${OPTARG}"
+        ;;
+  p)
+        # shellcheck disable=SC2034
+        oidc_project_name="${OPTARG}"
         ;;
   q)
         # shellcheck disable=SC2034

@@ -16,6 +16,8 @@ set_variables() {
   AZURE_OIDC_DEBUG="${AZURE_OIDC_DEBUG:-$debug}"
   AZURE_OIDC_QUIET="${AZURE_OIDC_QUIET:-$quiet}"
   AZURE_OIDC_ORGANIZATION="${AZURE_OIDC_ORGANIZATION:-$oidc_organization}"
+  AZURE_OIDC_PROJECT_NAME="${AZURE_OIDC_PROJECT_NAME:-$oidc_project_name}"
+  AZURE_OIDC_SERVICE_CONNECTION_NAME="${AZURE_OIDC_SERVICE_CONNECTION_NAME:-$oidc_service_connection_name}"
   AZURE_OIDC_YES_FLAG="${AZURE_OIDC_YES_FLAG:-$yes}"
   AZURE_OIDC_JSON_OUTPUT="${AZURE_OIDC_JSON_OUTPUT:-$json_file_location}"
 
@@ -31,6 +33,8 @@ set_variables() {
     printf "AZURE_OIDC_QUIET: %s\n" "$AZURE_OIDC_QUIET"
     printf "AZURE_OIDC_YES_FLAG: %s\n" "$AZURE_OIDC_YES_FLAG"
     printf "AZURE_OIDC_ORGANIZATION: %s\n" "$AZURE_OIDC_ORGANIZATION"
+    printf "AZURE_OIDC_PROJECT_NAME: %s\n" "$AZURE_OIDC_PROJECT_NAME"
+    printf "AZURE_OIDC_SERVICE_CONNECTION_NAME: %s\n" "$AZURE_OIDC_SERVICE_CONNECTION_NAME"
     printf "AZURE_SUBSCRIPTION_ID: %s\n" "$AZURE_SUBSCRIPTION_ID"
     printf "AZURE_SUBSCRIPTION_NAME: %s\n" "$AZURE_SUBSCRIPTION_NAME"
     printf "AZURE_TENANT_ID: %s\n" "$AZURE_TENANT_ID"
@@ -48,11 +52,14 @@ set_variables() {
   if [[ -n "$AZURE_OIDC_JSON_OUTPUT" ]]
   then
     # shellcheck disable=SC2034
-    assoc_array["oidc_app_name"]="$AZURE_OIDC_APP_NAME"
-    assoc_array["resource_group_name"]="$AZURE_RESOURCE_GROUP_NAME"
-    assoc_array["azure_subscription_id"]="$AZURE_SUBSCRIPTION_ID"
-    assoc_array["azure_subscription_name"]="$AZURE_SUBSCRIPTION_NAME"
-    assoc_array["azure_tenant_id"]="$AZURE_TENANT_ID"
+    assoc_array["AZ_CLIENT_NAME"]="$AZURE_OIDC_APP_NAME"
+    assoc_array["AZ_RESOURCE_GROUP_NAME"]="$AZURE_RESOURCE_GROUP_NAME"
+    assoc_array["AZ_SUBSCRIPTION_ID"]="$AZURE_SUBSCRIPTION_ID"
+    assoc_array["AZ_SUBSCRIPTION_NAME"]="$AZURE_SUBSCRIPTION_NAME"
+    assoc_array["AZ_TENANT_ID"]="$AZURE_TENANT_ID"
+    assoc_array["AZDO_ORG_SERVICE_URL"]="$AZURE_OIDC_ORGANIZATION"
+    assoc_array["AZ_PROJECT_NAME"]="$AZURE_OIDC_PROJECT_NAME"
+    assoc_array["AZ_SERVICE_CONNECTION_NAME"]="$AZURE_OIDC_SERVICE_CONNECTION_NAME"
   fi
 }
 
@@ -90,7 +97,7 @@ create_oidc_app() {
   [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "OIDC app_id: %s\n" "$az_ad_app_id"
 
   # shellcheck disable=SC2034
-  [[ -n "$AZURE_OIDC_JSON_OUTPUT" ]] && assoc_array["app_id"]="$az_ad_app_id"
+  [[ -n "$AZURE_OIDC_JSON_OUTPUT" ]] && assoc_array["AZ_CLIENT_ID"]="$az_ad_app_id"
 
   json=$(get_az_ad_sp_id "$az_ad_app_id")
   debug_output "$LINENO" "get_az_ad_sp_id JSON" "$json"
@@ -114,7 +121,7 @@ create_oidc_app() {
     debug_output "$LINENO" "sp_id" "$sp_id"
   fi
   # shellcheck disable=SC2034
-  [[ -n "$AZURE_OIDC_JSON_OUTPUT" ]] && assoc_array["sp_id"]="$sp_id"
+  [[ -n "$AZURE_OIDC_JSON_OUTPUT" ]] && assoc_array["AZ_SP_ID"]="$sp_id"
 
   [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "OIDC sp_id: %s\n" "$sp_id"
 
@@ -176,9 +183,9 @@ create_oidc_app() {
         debug_output "$LINENO" "fed_cred_subject" "$fed_cred_subject"
       fi
       # shellcheck disable=SC2034
-      [[ -n "$AZURE_OIDC_JSON_OUTPUT" ]] && assoc_array["fed_cred_id"]="$fed_cred_id"
+      [[ -n "$AZURE_OIDC_JSON_OUTPUT" ]] && assoc_array["AZ_FED_CRED_ID"]="$fed_cred_id"
       # shellcheck disable=SC2034
-      [[ -n "$AZURE_OIDC_JSON_OUTPUT" && -n "$fed_cred_subject" ]] && assoc_array["fed_cred_subject"]="$fed_cred_subject"
+      [[ -n "$AZURE_OIDC_JSON_OUTPUT" && -n "$fed_cred_subject" ]] && assoc_array["AZ_FED_CRED_SUBJECT"]="$fed_cred_subject"
     done
   done <<< "$AZURE_OIDC_SUBJECT_IDENTIFIER"
   [[ -z "$AZURE_OIDC_SUBJECT_IDENTIFIER" && "$AZURE_OIDC_QUIET" != "true" ]]  && echo "WARNING: no OIDC subjects have been specified, you will need to manually configure these in Azure"

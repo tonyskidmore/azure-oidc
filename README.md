@@ -154,8 +154,25 @@ export AZURE_OIDC_YES_FLAG="true"
 # use debug output
 ./scripts/azure-oidc.sh \
   -a app-azure-ado-oidc \
-  -u https://vstoken.dev.azure.com/2f2bb056-f9a0-4980-950d-aafc5498bb54 \
-  -i sc://kainos-poc/oidc/azurerm-oidc \
+  -u https://vstoken.dev.azure.com/e1538f7b-5100-4fa8-8a72-5ea2518261e2 \
+  -i sc://tonyskidmore/oidc/azurerm-oidc \
+  -g rg-azure-ado-oidc \
+  -r Contributor \
+  -f AzureDevOps \
+  -t "environment=dev iac=az-cli" \
+  -j ado-oidc-app.json \
+  -o https://dev.azure.com/tonyskidmore \
+  -p oidc \
+  -d
+
+# same as above but just specify the ADO org ID rather than the issuer url
+# TODO: -i should be constructed and not passed when -o, -p and -c are present
+./scripts/azure-oidc.sh \
+  -a app-azure-ado-oidc \
+  -o https://dev.azure.com/tonyskidmore\
+  -i sc://tonyskidmore/oidc/azurerm-oidc \
+  -p oidc \
+  -c azurerm-oidc \
   -g rg-azure-ado-oidc \
   -r Contributor \
   -f AzureDevOps \
@@ -163,30 +180,18 @@ export AZURE_OIDC_YES_FLAG="true"
   -j ado-oidc-app.json \
   -d
 
-# same as above but just specify the ADO org ID rather than the issuer url
-# ./scripts/azure-oidc.sh \
-#   -a app-azure-ado-oidc \
-#   -o 2f2bb056-f9a0-4980-950d-aafc5498bb54 \
-#   -i sc://kainos-poc/oidc/azurerm-oidc \
-#   -g rg-azure-ado-oidc \
-#   -r Contributor \
-#   -f AzureDevOps \
-#   -t "environment=dev iac=az-cli" \
-#   -j ado-oidc-app.json \
-#   -d
+ # read JSON and export all values
+ # get AZ_PROJECT_ID from AZ_PROJECT_NAME
+ # get org name by url and construct -i
+ # -i sc://tonyskidmore/oidc/azurerm-oidc \
 
-# create OIDC based service connection in Azure DevOps
-# export AZ_SUBSCRIPTION_ID="" # azure_subscription_name
-# export AZ_SUBSCRIPTION_NAME="" # azure_subscription_name
-# export AZ_TENANT_ID="" # azure_tenant_id
-# export AZ_CLIENT_ID="" # app_id
-# export AZDO_ORG_SERVICE_URL=""
-# export AZDO_ORG_SERVICE_ID=""
-# export AZDO_PROJECT_ID=""
-# export AZDO_PROJECT_NAME=""
-# export AZURE_DEVOPS_EXT_PAT=""
-# export AZDO_SERVICE_CONNECTION_NAME="azurerm-oidc"
-scripts/ado-create-oidc-sc.sh | jq
+# this should have been run
+# terraform AZDO_PERSONAL_ACCESS_TOKEN
+# azure cli AZURE_DEVOPS_EXT_PAT
+# export AZURE_DEVOPS_EXT_PAT="<pat-token>"
+
+# get all env vars from json
+scripts/ado-create-oidc-sc.sh ./ado-oidc-app.json
 
 
 # delete the app and the resource group

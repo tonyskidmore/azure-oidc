@@ -39,3 +39,12 @@ jq_get_first_by_key_ref() {
 
   jq -r --arg key "$key" '.[][$key]' <<< "$json"
 }
+
+jq_json_to_env_vars() {
+  local json_string="$1"
+
+  # loop through key/value using to_entries to add entries to variables
+  while IFS="=" read -r key value; do
+    export "$key"="$value"
+  done < <(jq -r 'to_entries | .[] | .key + "=" + (.value|tostring)' <<< "${json_string}")
+}

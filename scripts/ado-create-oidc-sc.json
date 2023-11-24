@@ -6,25 +6,25 @@
         "scopeLevel": "Subscription",
         "creationMode": "Manual"
     },
-    "name": "$AZDO_SERVICE_CONNECTION_NAME",
+    "name": "$AZ_SERVICE_CONNECTION_NAME",
     "type": "AzureRM",
     "url": "https://management.azure.com/",
     "authorization": {
         "parameters": {
-        "tenantid": "$AZ_TENANT_ID",
-        "serviceprincipalid": "$AZ_CLIENT_ID"
+          "tenantid": "$AZ_TENANT_ID",
+          "serviceprincipalid": "$AZ_CLIENT_ID"
         },
         "scheme": "WorkloadIdentityFederation"
     },
-    "isShared": true,
+    "isShared": false,
     "isReady": true,
     "serviceEndpointProjectReferences": [
         {
         "projectReference": {
-            "id": "$AZDO_PROJECT_ID",
-            "name": "$AZDO_PROJECT_NAME"
+            "id": "$AZ_PROJECT_ID",
+            "name": "$AZ_PROJECT_NAME"
         },
-        "name": "$AZDO_SERVICE_CONNECTION_NAME"
+        "name": "$AZ_SERVICE_CONNECTION_NAME"
         }
     ]
 }
