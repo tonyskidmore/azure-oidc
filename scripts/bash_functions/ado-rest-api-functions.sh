@@ -126,7 +126,6 @@ get_ado_organization_id() {
   if [[ -n "$user_id" ]]
   then
     account=$(get_ado_account_by_user_id "$user_id")
-    # _output "$LINENO" "account" "$account"
     ado_org_name=$(extract_ado_organization_name "$ado_org_url")
     organization_id=$(jq_ado_get_org_id "$ado_org_name" "$account")
   fi
