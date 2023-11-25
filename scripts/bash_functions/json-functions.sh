@@ -26,6 +26,16 @@ jq_count_list() {
   jq '. | length' <<< "$json"
 }
 
+function jq_ado_get_org_id {
+    local ado_org_name="$1"
+    local account_data="$2"
+    local account_id=""
+  
+    account_id=$(jq --arg ado_org_name "$ado_org_name" -r '.value[] | select(.accountName == $ado_org_name) | .accountId' <<< "$account_data")
+    echo "$account_id"
+}
+
+
 jq_get_by_key_ref() {
   local json="$1"
   local key="$2"

@@ -8,14 +8,19 @@ set_variables() {
   AZURE_RESOURCE_GROUP_LOCATION="${AZURE_RESOURCE_GROUP_LOCATION:-$oidc_resource_group_location}"
   AZURE_RESOURCE_GROUP_TAGS="${AZURE_RESOURCE_GROUP_TAGS:-$oidc_resource_group_tags}"
   AZURE_OIDC_APP_NAME="${AZURE_OIDC_APP_NAME:-$oidc_app_name}"
-  AZURE_OIDC_ISSUER_URL="${AZURE_OIDC_ISSUER_URL:-$oidc_issuer_url}"
   AZURE_OIDC_ROLE_ASSIGNMENT="${AZURE_OIDC_ROLE_ASSIGNMENT:-$oidc_role_assignment}"
   AZURE_OIDC_SUBJECT_IDENTIFIER="${AZURE_OIDC_SUBJECT_IDENTIFIER:-$oidc_subject_identifier}"
   AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO="${AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO:-$oidc_federated_credential_scenario}"
   AZURE_OIDC_MODE="${AZURE_OIDC_MODE:-$mode}"
-  AZURE_OIDC_DEBUG="${AZURE_OIDC_DEBUG:-$debug}"
+  DEBUG="${DEBUG:-$debug}"
   AZURE_OIDC_QUIET="${AZURE_OIDC_QUIET:-$quiet}"
   AZURE_OIDC_ORGANIZATION="${AZURE_OIDC_ORGANIZATION:-$oidc_organization}"
+  AZURE_OIDC_ORGANIZATION_ID="${AZURE_OIDC_ORGANIZATION_ID:-${oidc_vstoken_ado_org_id:-$(get_ado_organization_id "$AZURE_OIDC_ORGANIZATION")}}"
+  # TODO: this needs a dynamic assignment
+  # Issuer
+  # AZURE_OIDC_ISSUER_URL https://token.actions.githubusercontent.com https://vstoken.dev.azure.com/e1538f7b-5100-4fa8-8a72-5ea2518261e2
+  # AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO GitHub AzureDevOps
+  AZURE_OIDC_ISSUER_URL="${AZURE_OIDC_ISSUER_URL:-${oidc_issuer_url:-$(get_oidc_issuer_url "$AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO")}}"
   AZURE_OIDC_PROJECT_NAME="${AZURE_OIDC_PROJECT_NAME:-$oidc_project_name}"
   AZURE_OIDC_SERVICE_CONNECTION_NAME="${AZURE_OIDC_SERVICE_CONNECTION_NAME:-$oidc_service_connection_name}"
   AZURE_OIDC_YES_FLAG="${AZURE_OIDC_YES_FLAG:-$yes}"
@@ -29,10 +34,11 @@ set_variables() {
 
     # shellcheck disable=SC2154
     printf "AZURE_OIDC_MODE: %s\n" "$AZURE_OIDC_MODE"
-    printf "AZURE_OIDC_DEBUG: %s\n" "$AZURE_OIDC_DEBUG"
+    printf "DEBUG: %s\n" "$DEBUG"
     printf "AZURE_OIDC_QUIET: %s\n" "$AZURE_OIDC_QUIET"
     printf "AZURE_OIDC_YES_FLAG: %s\n" "$AZURE_OIDC_YES_FLAG"
     printf "AZURE_OIDC_ORGANIZATION: %s\n" "$AZURE_OIDC_ORGANIZATION"
+    printf "AZURE_OIDC_ORGANIZATION_ID: %s\n" "$AZURE_OIDC_ORGANIZATION_ID"
     printf "AZURE_OIDC_PROJECT_NAME: %s\n" "$AZURE_OIDC_PROJECT_NAME"
     printf "AZURE_OIDC_SERVICE_CONNECTION_NAME: %s\n" "$AZURE_OIDC_SERVICE_CONNECTION_NAME"
     printf "AZURE_SUBSCRIPTION_ID: %s\n" "$AZURE_SUBSCRIPTION_ID"
@@ -60,6 +66,7 @@ set_variables() {
     assoc_array["AZDO_ORG_SERVICE_URL"]="$AZURE_OIDC_ORGANIZATION"
     assoc_array["AZ_PROJECT_NAME"]="$AZURE_OIDC_PROJECT_NAME"
     assoc_array["AZ_SERVICE_CONNECTION_NAME"]="$AZURE_OIDC_SERVICE_CONNECTION_NAME"
+    assoc_array["DEBUG"]="$DEBUG"
   fi
 }
 
@@ -153,6 +160,13 @@ create_oidc_app() {
   done <<< "$AZURE_OIDC_ROLE_ASSIGNMENT"
   [[ -z "$AZURE_OIDC_ROLE_ASSIGNMENT" ]]  && echo "INFORMATION: no RBAC assignments specified, you will need to configure any RBAC requirements in Azure"
 
+  # form AZURE_OIDC_SUBJECT_IDENTIFIER from Azure DevOps inputs if supplied
+  if [[ "$AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO" == "AzureDevOps" && -n "$AZURE_OIDC_ORGANIZATION" && -n "$AZURE_OIDC_PROJECT_NAME" && -n "$AZURE_OIDC_SERVICE_CONNECTION_NAME" ]]
+  then
+    AZURE_OIDC_SUBJECT_IDENTIFIER=$(get_ado_subject_identifier_name)
+    debug_output "$LINENO" "get_ado_subject_identifier_name" "$AZURE_OIDC_SUBJECT_IDENTIFIER"
+  fi
+
   while IFS=, read -ra subjects; do
     for subject in "${subjects[@]}"; do
       fc_subject=$(trim_spaces "$subject")
@@ -233,15 +247,32 @@ delete_oidc_app() {
 
 }
 
-debug_output() {
-  local lineno="$1"
-  local message="$2"
-  local value="$3"
-  local calling_lineno=""
+get_ado_subject_identifier_name() {
+  local subject_identifier_name=""
+  local ado_organization_name=""
 
-  if [[ "$AZURE_OIDC_DEBUG" == "true" ]]
-  then
-    calling_lineno=$((lineno - 1))
-    printf "DEBUG: line %s of %s: %s: \n%s\n" "$calling_lineno" "${FUNCNAME[1]}" "$message" "$value"
-  fi
+  ado_organization_name=$(extract_ado_organization_name "$AZURE_OIDC_ORGANIZATION")
+  subject_identifier_name="sc://${ado_organization_name}/${AZURE_OIDC_PROJECT_NAME}/${AZURE_OIDC_SERVICE_CONNECTION_NAME}"
+
+  echo "$subject_identifier_name"
+}
+
+get_oidc_issuer_url() {
+  local issuer_url=""
+  local scenario="$1"
+
+  case "$scenario" in
+    "GitHub")
+      issuer_url="https://token.actions.githubusercontent.com"
+      ;;
+    "AzureDevOps")
+      issuer_url="https://vstoken.dev.azure.com/${AZURE_OIDC_ORGANIZATION_ID}"
+      ;;
+    *)
+      #TODO: exit_script
+      exit_script "get_oidc_issuer_url: invalid scenario $scenario" 1
+      ;;
+  esac
+
+  echo "$issuer_url"
 }

@@ -87,6 +87,54 @@ create_ado_service_endpoint() {
   rest_api_call "POST" "$projectUrl" "$data"
 }
 
+get_ado_account_by_user_id() {
+  local user_id="$1"
+  local account=""
+  local url=""
+
+  url="https://app.vssps.visualstudio.com/_apis/accounts?memberId=${user_id}&api-version=6.0"
+  account=$(rest_api_call "GET" "$url")
+
+  echo "$account"
+}
+
+
+get_ado_current_user_id () {
+  local user_id=""
+  local url=""
+  local profile_data=""
+
+  url="https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=6.0"
+  profile_data=$(rest_api_call "GET" "$url")
+  # debug_output "$LINENO" "profile_data" "$profile_data"
+
+  user_id=$(jq -r '.id' <<< "$profile_data")
+
+  echo "$user_id"
+}
+
+get_ado_organization_id() {
+  local ado_org_url="$1"
+  local user_id=""
+  local account=""
+  local ado_org_name=""
+  local organization_id=""
+
+  # user_id will only be returned if AZURE_DEVOPS_EXT_PAT is defined for "All accessible organizations"
+  # if user_id is empty, then we cannot dynamically get the organization id
+  user_id=$(get_ado_current_user_id)
+  if [[ -n "$user_id" ]]
+  then
+    account=$(get_ado_account_by_user_id "$user_id")
+    # _output "$LINENO" "account" "$account"
+    ado_org_name=$(extract_ado_organization_name "$ado_org_url")
+    organization_id=$(jq_ado_get_org_id "$ado_org_name" "$account")
+  fi
+
+  echo "$organization_id"
+
+}
+
 get_ado_projects() {
   local projectUrl=""
 

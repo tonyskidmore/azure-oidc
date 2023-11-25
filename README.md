@@ -170,7 +170,6 @@ export AZURE_OIDC_YES_FLAG="true"
 ./scripts/azure-oidc.sh \
   -a app-azure-ado-oidc \
   -o https://dev.azure.com/tonyskidmore\
-  -i sc://tonyskidmore/oidc/azurerm-oidc \
   -p oidc \
   -c azurerm-oidc \
   -g rg-azure-ado-oidc \
@@ -187,6 +186,7 @@ export AZURE_OIDC_YES_FLAG="true"
 
 # this should have been run
 # terraform AZDO_PERSONAL_ACCESS_TOKEN
+# PAT with scopes of at least  Service Connections - Read, query & manage
 # azure cli AZURE_DEVOPS_EXT_PAT
 # export AZURE_DEVOPS_EXT_PAT="<pat-token>"
 

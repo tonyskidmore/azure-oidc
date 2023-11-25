@@ -10,7 +10,7 @@ declare -A assoc_array
 usage () {
   cat <<END
 
-Usage : ${script_name} [-h] -a <oidc_app_name> [-c <oidc_service_connection_name>] [-d] [-e <entra_tenant_id>] [-f oidc_federated_credential_scenario ] -i <oidc_subject_identifier> [-f <oidc_federated_credential_scenario>] [-g <oidc_resource_group_name>] [-j <json_file_location>] [-l <oidc_resource_group_location>] [-n <oidc_subscription_name>] [-m <mode>] [-o <oidc_organization>] [-p <oidc_project_name>] [-q] [-r <oidc_role_assignment>] [-s <oidc_subscription_id>] [-t <oidc_resource_group_tags>] [-u oidc_issuer_url] [-y]
+Usage : ${script_name} [-h] -a <oidc_app_name> [-c <oidc_service_connection_name>] [-d] [-e <entra_tenant_id>] [-f oidc_federated_credential_scenario ] -i <oidc_subject_identifier> [-f <oidc_federated_credential_scenario>] [-g <oidc_resource_group_name>] [-j <json_file_location>] [-l <oidc_resource_group_location>] [-n <oidc_subscription_name>] [-m <mode>] [-o <oidc_organization>] [-p <oidc_project_name>] [-q] [-r <oidc_role_assignment>] [-s <oidc_subscription_id>] [-t <oidc_resource_group_tags>] [-u oidc_issuer_url] [-v <oidc_vstoken_ado_org_id>] [-y]
 
   -a = Azure AD app registration name
   -c = Azure DevOps service connection name
@@ -24,13 +24,14 @@ Usage : ${script_name} [-h] -a <oidc_app_name> [-c <oidc_service_connection_name
   -l = Azure location for OIDC resource group
   -m = Mode of operation - defaults to "create"
   -n = Azure subscription name for OIDC
-  -o = Organization e.g. Azure DevOps organization name
+  -o = Organization e.g. Azure DevOps organization URL
   -p = Project e.g. Azure DevOps project name
   -q = quiet mode
   -r = Azure role assignment for OIDC scope
   -s = Azure subscription ID for OIDC
   -t = Azure resource group for OIDC tags
   -u = OIDC issuer URL
+  -v = Azure DevOps organization ID
   -y = Answer yes to prompting to force deletion
 
 Purpose:
@@ -44,9 +45,9 @@ END
 # set defaults
 mode="${AZURE_OIDC_MODE:-create}"
 oidc_federated_credential_scenario="${AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO:-GitHub}"
-oidc_issuer_url="${AZURE_OIDC_ISSUER_URL:-https://token.actions.githubusercontent.com}"
+# oidc_issuer_url="${AZURE_OIDC_ISSUER_URL:-https://token.actions.githubusercontent.com}"
 
-while getopts "a:c:de:f:g:hj:i:l:m:n:o:p:r:s:t:qu:y" name
+while getopts "a:c:de:f:g:hj:i:l:m:n:o:p:r:s:t:qu:v:y" name
 do
   case ${name} in
   a)
@@ -123,6 +124,10 @@ do
   u)
         # shellcheck disable=SC2034
         oidc_issuer_url="${OPTARG}"
+        ;;
+  v)
+        # shellcheck disable=SC2034
+        oidc_vstoken_ado_org_id="${OPTARG}"
         ;;
   y)
         # shellcheck disable=SC2034
