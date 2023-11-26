@@ -25,6 +25,7 @@ build_params() {
   fi
 
   params+=("--user" ":$AZURE_DEVOPS_EXT_PAT" "$url")
+  # debug_output "$LINENO" "params" "${params[*]}" true
 
 }
 
@@ -32,6 +33,7 @@ checkout() {
 
   if [[ "$exit_code" != "0" ]]
   then
+    #TODO: fix variable references
     raise "Operation failed. Mode: $mode, Method: $method, exit_code: $exit_code, HTTP code: $http_code"
     printf "%s\n" "$out"
     http_exit_code=1
@@ -106,7 +108,7 @@ get_ado_current_user_id () {
 
   url="https://app.vssps.visualstudio.com/_apis/profile/profiles/me?api-version=6.0"
   profile_data=$(rest_api_call "GET" "$url")
-  # debug_output "$LINENO" "profile_data" "$profile_data"
+  debug_output "$LINENO" "profile_data" "$profile_data - $http_code" true
 
   user_id=$(jq -r '.id' <<< "$profile_data")
 
@@ -114,10 +116,9 @@ get_ado_current_user_id () {
 }
 
 get_ado_organization_id() {
-  local ado_org_url="$1"
+  local ado_organization_name="$1"
   local user_id=""
   local account=""
-  local ado_org_name=""
   local organization_id=""
 
   # user_id will only be returned if AZURE_DEVOPS_EXT_PAT is defined for "All accessible organizations"
@@ -126,8 +127,11 @@ get_ado_organization_id() {
   if [[ -n "$user_id" ]]
   then
     account=$(get_ado_account_by_user_id "$user_id")
-    ado_org_name=$(extract_ado_organization_name "$ado_org_url")
-    organization_id=$(jq_ado_get_org_id "$ado_org_name" "$account")
+    debug_output "$LINENO" "account" "$account" "true"
+    # ado_org_name=$(extract_ado_organization_name "$ado_org_url")
+    # debug_output "$LINENO" "ado_org_name" "$ado_org_name" "true"
+    organization_id=$(jq_ado_get_org_id "$ado_organization_name" "$account")
+    debug_output "$LINENO" "organization_id" "$organization_id" "true"
   fi
 
   echo "$organization_id"

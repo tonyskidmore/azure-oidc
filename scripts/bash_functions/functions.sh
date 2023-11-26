@@ -1,6 +1,8 @@
 #!/bin/bash
 
 set_variables() {
+  DEBUG="${DEBUG:-$debug}"
+  DEBUG_FILE="${DEBUG_FILE:-$debug_file}"
   AZURE_SUBSCRIPTION_ID="${AZURE_SUBSCRIPTION_ID:-${oidc_subscription_id:-$(get_az_subscription_id)}}"
   AZURE_SUBSCRIPTION_NAME="${AZURE_SUBSCRIPTION_NAME:-${oidc_subscription_name:-$(get_az_subscription_name)}}"
   AZURE_TENANT_ID="${AZURE_TENANT_ID:-$(get_az_tenant_id)}"
@@ -12,15 +14,14 @@ set_variables() {
   AZURE_OIDC_SUBJECT_IDENTIFIER="${AZURE_OIDC_SUBJECT_IDENTIFIER:-$oidc_subject_identifier}"
   AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO="${AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO:-$oidc_federated_credential_scenario}"
   AZURE_OIDC_MODE="${AZURE_OIDC_MODE:-$mode}"
-  DEBUG="${DEBUG:-$debug}"
   AZURE_OIDC_QUIET="${AZURE_OIDC_QUIET:-$quiet}"
-  AZURE_OIDC_ORGANIZATION="${AZURE_OIDC_ORGANIZATION:-$oidc_organization}"
-  AZURE_OIDC_ORGANIZATION_ID="${AZURE_OIDC_ORGANIZATION_ID:-${oidc_vstoken_ado_org_id:-$(get_ado_organization_id "$AZURE_OIDC_ORGANIZATION")}}"
   # TODO: this needs a dynamic assignment
   # Issuer
   # AZURE_OIDC_ISSUER_URL https://token.actions.githubusercontent.com https://vstoken.dev.azure.com/e1538f7b-5100-4fa8-8a72-5ea2518261e2
   # AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO GitHub AzureDevOps
+  AZURE_OIDC_ORGANIZATION="${AZURE_OIDC_ORGANIZATION:-$oidc_organization}"
   AZURE_OIDC_ISSUER_URL="${AZURE_OIDC_ISSUER_URL:-${oidc_issuer_url:-$(get_oidc_issuer_url "$AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO")}}"
+  AZURE_OIDC_ORGANIZATION_ID="${AZURE_OIDC_ORGANIZATION_ID:-$oidc_vstoken_ado_org_id}"
   AZURE_OIDC_PROJECT_NAME="${AZURE_OIDC_PROJECT_NAME:-$oidc_project_name}"
   AZURE_OIDC_SERVICE_CONNECTION_NAME="${AZURE_OIDC_SERVICE_CONNECTION_NAME:-$oidc_service_connection_name}"
   AZURE_OIDC_YES_FLAG="${AZURE_OIDC_YES_FLAG:-$yes}"
@@ -35,6 +36,7 @@ set_variables() {
     # shellcheck disable=SC2154
     printf "AZURE_OIDC_MODE: %s\n" "$AZURE_OIDC_MODE"
     printf "DEBUG: %s\n" "$DEBUG"
+    printf "DEBUG_FILE: %s\n" "$DEBUG_FILE"
     printf "AZURE_OIDC_QUIET: %s\n" "$AZURE_OIDC_QUIET"
     printf "AZURE_OIDC_YES_FLAG: %s\n" "$AZURE_OIDC_YES_FLAG"
     printf "AZURE_OIDC_ORGANIZATION: %s\n" "$AZURE_OIDC_ORGANIZATION"
@@ -258,20 +260,30 @@ get_ado_subject_identifier_name() {
 }
 
 get_oidc_issuer_url() {
-  local issuer_url=""
   local scenario="$1"
+  local ado_organization_name=""
+  local issuer_url=""
+
 
   case "$scenario" in
     "GitHub")
       issuer_url="https://token.actions.githubusercontent.com"
       ;;
     "AzureDevOps")
+      ado_organization_name=$(extract_ado_organization_name "$AZURE_OIDC_ORGANIZATION")
+      debug_output "$LINENO" "ado_organization_name" "$ado_organization_name" "true"
+      [[ -z "$AZURE_OIDC_ORGANIZATION_ID" ]] && AZURE_OIDC_ORGANIZATION_ID=$(get_ado_organization_id "$ado_organization_name")
+      if [[ -z "$AZURE_OIDC_ORGANIZATION_ID" ]]
+      then
+        echo "ERROR: AZURE_OIDC_ORGANIZATION_ID is not defined and could not be dynamically determined"
+        exit 1
+      fi
       issuer_url="https://vstoken.dev.azure.com/${AZURE_OIDC_ORGANIZATION_ID}"
       ;;
-    *)
-      #TODO: exit_script
-      exit_script "get_oidc_issuer_url: invalid scenario $scenario" 1
-      ;;
+    # *)
+    #   #TODO: exit_script
+    #   exit_script "get_oidc_issuer_url: invalid scenario $scenario" 1
+    #   ;;
   esac
 
   echo "$issuer_url"

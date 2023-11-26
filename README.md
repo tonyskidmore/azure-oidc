@@ -167,6 +167,7 @@ export AZURE_OIDC_YES_FLAG="true"
 
 # same as above but just specify the ADO org ID rather than the issuer url
 # TODO: -i should be constructed and not passed when -o, -p and -c are present
+# export AZURE_DEVOPS_EXT_PAT="<pat-token>" is required to perform organization ID query
 ./scripts/azure-oidc.sh \
   -a app-azure-ado-oidc \
   -o https://dev.azure.com/tonyskidmore\
@@ -177,7 +178,8 @@ export AZURE_OIDC_YES_FLAG="true"
   -f AzureDevOps \
   -t "environment=dev iac=az-cli" \
   -j ado-oidc-app.json \
-  -d
+  -d \
+  -b "$PWD/log.txt"
 
  # read JSON and export all values
  # get AZ_PROJECT_ID from AZ_PROJECT_NAME

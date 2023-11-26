@@ -46,12 +46,18 @@ debug_output() {
   local lineno="$1"
   local message="$2"
   local value="$3"
+  local file_only="${4:-false}"
   local calling_lineno=""
+  local debug_line=""
+  local utc_timestamp=""
 
-  if [[ "$DEBUG" == "true" ]]
+  if [[ "$DEBUG" == "true" || -n "$DEBUG_FILE" ]]
   then
     calling_lineno=$((lineno - 1))
-    printf "DEBUG: line %s of %s: %s: \n%s\n" "$calling_lineno" "${FUNCNAME[1]}" "$message" "$value"
+    utc_timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    printf -v debug_line "%s DEBUG: line %s of %s: %s:\n%s\n" "$utc_timestamp" "$calling_lineno" "${FUNCNAME[1]}" "$message" "$value"
+    [[ -n "$DEBUG_FILE" ]] && echo "$debug_line" >> "$DEBUG_FILE"
+    [[ "$file_only" != "true" ]] && echo "$debug_line"
   fi
 }
 
@@ -63,30 +69,30 @@ exit_script() {
 }
 
 extract_ado_organization_name() {
-    local url="$1"
-    local org_name
+  local url="$1"
+  local org_name
 
-    # Remove protocol (http:// or https://)
-    url="${url#http://}"
-    url="${url#https://}"
+  # Remove protocol (http:// or https://)
+  url="${url#http://}"
+  url="${url#https://}"
 
-    # Handle legacy format like '{organization}.visualstudio.com'
-    if [[ $url == *".visualstudio.com"* ]]; then
-        org_name="${url%%.*}"
-    else
-        # Handle standard format like 'dev.azure.com/{organization}'
-        url="${url#*dev.azure.com/}"
-        org_name="${url%%/*}"
-    fi
+  # Handle legacy format like '{organization}.visualstudio.com'
+  if [[ $url == *".visualstudio.com"* ]]; then
+      org_name="${url%%.*}"
+  else
+      # Handle standard format like 'dev.azure.com/{organization}'
+      url="${url#*dev.azure.com/}"
+      org_name="${url%%/*}"
+  fi
 
-    # Remove trailing slashes if any
-    org_name="${org_name%%/*}"
+  # Remove trailing slashes if any
+  org_name="${org_name%%/*}"
 
-    # Remove any query parameters or anchors
-    org_name="${org_name%%\?*}"
-    org_name="${org_name%%\#*}"
+  # Remove any query parameters or anchors
+  org_name="${org_name%%\?*}"
+  org_name="${org_name%%\#*}"
 
-    echo "$org_name"
+  echo "$org_name"
 }
 
 get_fed_cred_params() {
