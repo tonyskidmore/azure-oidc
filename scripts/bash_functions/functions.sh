@@ -15,10 +15,6 @@ set_variables() {
   AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO="${AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO:-$oidc_federated_credential_scenario}"
   AZURE_OIDC_MODE="${AZURE_OIDC_MODE:-$mode}"
   AZURE_OIDC_QUIET="${AZURE_OIDC_QUIET:-$quiet}"
-  # TODO: this needs a dynamic assignment
-  # Issuer
-  # AZURE_OIDC_ISSUER_URL https://token.actions.githubusercontent.com https://vstoken.dev.azure.com/e1538f7b-5100-4fa8-8a72-5ea2518261e2
-  # AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO GitHub AzureDevOps
   AZURE_OIDC_ORGANIZATION="${AZURE_OIDC_ORGANIZATION:-$oidc_organization}"
   AZURE_OIDC_ISSUER_URL="${AZURE_OIDC_ISSUER_URL:-${oidc_issuer_url:-$(get_oidc_issuer_url "$AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO")}}"
   AZURE_OIDC_ORGANIZATION_ID="${AZURE_OIDC_ORGANIZATION_ID:-$oidc_vstoken_ado_org_id}"
@@ -72,6 +68,10 @@ set_variables() {
   fi
 }
 
+# TODO: refactor this function
+# allow for kind of app or UAMI
+# split RBAC role assignment into separate function
+# Azure DevOps subjects could be multiple as per GitHub
 create_oidc_app() {
   local json=""
   local count=""
@@ -83,18 +83,24 @@ create_oidc_app() {
 
   set_variables
 
-  [[ "$AZURE_OIDC_QUIET" != "true" ]] && banner_message "Configuring Azure for GitHub OIDC"
+  # check AZURE_OIDC_ISSUER_URL is valid
+  check_oidc_issuer_url "$AZURE_OIDC_ISSUER_URL" "$AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO"
 
+  [[ "$AZURE_OIDC_QUIET" != "true" ]] && banner_message "Configuring Azure for $AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO OIDC"
+
+  # check if specified app exists
   json=$(get_az_ad_app_by_name "$AZURE_OIDC_APP_NAME")
   debug_output "$LINENO" "get_az_ad_app_by_name JSON" "$json"
   jq_check_json "$json" || exit_script "create_oidc_app: invalid JSON from get_az_ad_app_by_name $AZURE_OIDC_APP_NAME"  1
   count=$(jq_count_list "$json")
   debug_output "$LINENO" "count" "$count"
 
+  # if app exists, get the app_id
   if [[ "$count" == "1" ]]
   then
     az_ad_app_id=$(jq_get_first_by_key_ref "$json" "appId")
     debug_output "$LINENO" "az_ad_app_id" "$az_ad_app_id"
+  # if app does not exist, create it and get the app_id
   else
     json=$(create_az_ad_app "$AZURE_OIDC_APP_NAME")
     debug_output "$LINENO" "create_az_ad_app JSON" "$json"
@@ -108,20 +114,23 @@ create_oidc_app() {
   # shellcheck disable=SC2034
   [[ -n "$AZURE_OIDC_JSON_OUTPUT" ]] && assoc_array["AZ_CLIENT_ID"]="$az_ad_app_id"
 
+  # check if specified app has a service principal
   json=$(get_az_ad_sp_id "$az_ad_app_id")
   debug_output "$LINENO" "get_az_ad_sp_id JSON" "$json"
 
+  # check that the JSON is valid
   jq_check_json "$json" || exit_script "create_oidc_app: invalid JSON from get_az_ad_sp_id $az_ad_app_id"  1
   count=$(jq_count_list "$json")
   debug_output "$LINENO" "count" "$count"
 
+  # if app has a service principal, get the sp_id
   if [[ "$count" == "1" ]]
   then
     sp_id=$(jq_get_first_by_key_ref "$json" "id")
     debug_output "$LINENO" "sp_id" "$sp_id"
   fi
 
-
+  # if app does not have a service principal, create it and get the sp_id
   if [[ -z "$sp_id" ]]
   then
     json=$(create_az_ad_sp "$az_ad_app_id")
@@ -134,6 +143,7 @@ create_oidc_app() {
 
   [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "OIDC sp_id: %s\n" "$sp_id"
 
+  # RBAC role assignment
   sub_scope="/subscriptions/${AZURE_SUBSCRIPTION_ID}"
   debug_output "$LINENO" "sub_scope" "$sub_scope"
 
@@ -169,12 +179,13 @@ create_oidc_app() {
     debug_output "$LINENO" "get_ado_subject_identifier_name" "$AZURE_OIDC_SUBJECT_IDENTIFIER"
   fi
 
+  # create federated credentials
   while IFS=, read -ra subjects; do
     for subject in "${subjects[@]}"; do
       fc_subject=$(trim_spaces "$subject")
       debug_output "$LINENO" "fc_subject" "$fc_subject"
       [[ "$AZURE_OIDC_QUIET" != "true" ]] && printf "Checking federated credential: %s\n" "$fc_subject"
-      check_oidc_subject_format "$fc_subject"
+      check_oidc_subject_format "$fc_subject" "$AZURE_OIDC_FEDERATED_CREDENTIAL_SCENARIO"
       subject_name=$(replace_colon_and_slash "$fc_subject")
       debug_output "$LINENO" "subject_name" "$fc_subject"
 
@@ -217,7 +228,7 @@ delete_oidc_app() {
   local count=""
   set_variables
 
-  banner_message "Deleting Azure GitHub OIDC configuration"
+  banner_message "Deleting Azure OIDC configuration"
 
   json=$(get_az_ad_app_by_name "$AZURE_OIDC_APP_NAME")
   debug_output "$LINENO" "get_az_ad_app_by_name JSON" "$json"
@@ -264,6 +275,7 @@ get_oidc_issuer_url() {
   local ado_organization_name=""
   local issuer_url=""
 
+  debug_output "$LINENO" "scenarioa" "$scenario" "true"
 
   case "$scenario" in
     "GitHub")
@@ -275,15 +287,16 @@ get_oidc_issuer_url() {
       [[ -z "$AZURE_OIDC_ORGANIZATION_ID" ]] && AZURE_OIDC_ORGANIZATION_ID=$(get_ado_organization_id "$ado_organization_name")
       if [[ -z "$AZURE_OIDC_ORGANIZATION_ID" ]]
       then
-        echo "ERROR: AZURE_OIDC_ORGANIZATION_ID is not defined and could not be dynamically determined"
-        exit 1
+        echo "ERROR: AZURE_OIDC_ORGANIZATION_ID is not defined and could not be dynamically determined." \
+              "Make sure you have set AZURE_DEVOPS_EXT_PAT to a Personal Access Token with access to all organizations."
+        return 1
       fi
       issuer_url="https://vstoken.dev.azure.com/${AZURE_OIDC_ORGANIZATION_ID}"
       ;;
-    # *)
-    #   #TODO: exit_script
-    #   exit_script "get_oidc_issuer_url: invalid scenario $scenario" 1
-    #   ;;
+    *)
+      printf "get_oidc_issuer_url: invalid federation scenario %s\n" "$scenario" >&2
+      return 1
+      ;;
   esac
 
   echo "$issuer_url"

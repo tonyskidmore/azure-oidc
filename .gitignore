@@ -1,4 +1,6 @@
 **/*oidc-app.json
+**/*oidc.json
 http_code
 out
 log.txt
+data.json

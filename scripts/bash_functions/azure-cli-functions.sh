@@ -50,6 +50,47 @@ create_az_group() {
     --output json
 }
 
+create_az_identity() {
+  local az_identity_name="$1"
+  local az_resource_group_name="$2"
+  local az_identity_location="${3:-uksouth}"
+  shift 2
+  local az_identity_tags_string="$*"
+  local tag_string=""
+
+  IFS=' ' read -r -a az_identity_tags_array <<< "$az_identity_tags_string"
+
+  # Build tag string for Azure CLI
+  for tag_pair in "${az_identity_tags_array[@]}"; do
+    if [[ "$tag_pair" == *"="* ]]; then
+      tag_string+="$tag_pair "
+    fi
+  done
+
+  az identity create \
+    --name "$az_identity_name" \
+    --resource-group "$az_resource_group_name" \
+    --location "$az_identity_location" \
+    --tags "${az_resource_group_tags_array[@]}" \
+    --output json
+}
+
+create_az_ad_identity_fed_cred() {
+  local identity_name="$1"
+  local name="$2"
+  local az_resource_group_name="$3"
+  local issuer="$4"
+  local subject="$5"
+
+  az ad app federated-credential create \
+      --identity-name "$identity_name" \
+      --name "$name" \
+      --resource-group "$az_resource_group_name" \
+      --issuer "$issuer" \
+      --subject "$subject" \
+      --output json
+}
+
 create_az_role_assignment_sp() {
   local az_role_assignment_name="$1"
   local az_role_assignment_subscription_id="$2"
@@ -104,13 +145,37 @@ get_az_ad_app_fed_cred_id() {
 
 get_az_ad_sp_id() {
   local az_ad_app_id="$1"
-  local az_ad_sp_id=""
   local filter=""
   local params=""
 
   filter="appId eq '${az_ad_app_id}'"
   params=("ad" "sp" "list" "--filter" "$filter" "--output" "json")
   az "${params[@]}"
+}
+
+get_az_identity_by_name() {
+  local az_identity_name="$1"
+  local az_resource_group_name="$2"
+  local query=""
+
+  query="[?name == '$az_identity_name']"
+
+  az identity list \
+    --resource-group "$az_resource_group_name" \
+    --query "$query" \
+    --output json
+}
+
+get_az_identity_fed_cred() {
+  local az_identity_name="$1"
+  local az_resource_group_name="$2"
+  local subj="$3"
+
+  az identity federated-credential list \
+    --identity-name "$az_identity_name" \
+    --resource-group "$az_resource_group_name" \
+    --query "[?subject=='$subj']" \
+    --output json
 }
 
 get_az_subscription_id() {

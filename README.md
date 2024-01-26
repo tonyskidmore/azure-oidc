@@ -25,6 +25,9 @@ The script has some limited RBAC capability e.g. you can define a resource group
 * [Azure CLI](https://github.com/Azure/azure-cli) - created and tested with version 2.53.1
 * [jq](https://stedolan.github.io/jq) - created and tested with version 1.6
 
+The `ado-create-oidc-sc.sh` script additionally requires:
+* [envsubst](https://www.man7.org/linux/man-pages/man1/envsubst.1.html) - which is part of the gettext package
+
 ## GitHub examples
 
 ````bash
@@ -46,6 +49,12 @@ az login
 ./scripts/azure-oidc.sh \
   -a azure-github-oidc \
   -i "repo:tonyskidmore/azure-oidc:environment:dev"
+
+# Doesn't allow for incorrect entries subject identifier or issuer URL
+./scripts/azure-oidc.sh \
+  -a azure-github-oidc-test \
+  -i "rep:tonyskidmore/azure-oidc:environment:dev" \
+  -u https://token.action.githubusercontent.com
 
 # Create resource group and app an assign reader RBAC and create tags
 # used for .github/workflows/github-oidc-test.yml
@@ -126,7 +135,11 @@ export AZURE_OIDC_YES_FLAG="true"
   -m delete
 
 ````
-## Azure DevOps examples (not yet implemented)
+## Azure DevOps examples
+
+> Workload identity federation for Azure Resource Manager is currently in public preview
+
+See: [Manually configure Azure Resource Manager workload identity service connections](https://learn.microsoft.com/en-us/azure/devops/pipelines/release/configure-workload-identity?view=azure-devops)  
 
 | Field	             | Description                                                                            |
 |--------------------|----------------------------------------------------------------------------------------|
@@ -138,9 +151,16 @@ export AZURE_OIDC_YES_FLAG="true"
 
 # Create app with federated credential and no resource group or RBAC
 ./scripts/azure-oidc.sh \
-  -a app-azure-ado-oidc \
+  -a azure-ado-oidc \
   -u https://vstoken.dev.azure.com/e1538f7b-5100-4fa8-8a72-5ea2518261e2 \
   -i sc://tonyskidmore/oidc/azurerm-oidc \
+  -f AzureDevOps
+
+# Doesn't allow for incorrect entries subject identifier or issuer URL
+./scripts/azure-oidc.sh \
+  -a azure-ado-oidc-test \
+  -u https://vstoken.dev.azure.com/e1538f7b-5100-4fa8-8a72-5ea2518261e \
+  -i sc://tonyskidmore/oidc \
   -f AzureDevOps
 
 # Create app with federated credential
@@ -153,7 +173,7 @@ export AZURE_OIDC_YES_FLAG="true"
 # output as JSON (screen and file)
 # use debug output
 ./scripts/azure-oidc.sh \
-  -a app-azure-ado-oidc \
+  -a azure-ado-oidc \
   -u https://vstoken.dev.azure.com/e1538f7b-5100-4fa8-8a72-5ea2518261e2 \
   -i sc://tonyskidmore/oidc/azurerm-oidc \
   -g rg-azure-ado-oidc \
@@ -163,13 +183,16 @@ export AZURE_OIDC_YES_FLAG="true"
   -j ado-oidc-app.json \
   -o https://dev.azure.com/tonyskidmore \
   -p oidc \
-  -d
+  -d \
+  -b "$PWD/log.txt"
 
 # same as above but just specify the ADO org ID rather than the issuer url
-# TODO: -i should be constructed and not passed when -o, -p and -c are present
+# -i is constructed and not passed when -o, -p and -c are present
+# the -u issuer URL can be constructed dynamically but only if
+# a valid AZURE_DEVOPS_EXT_PAT is set AND is created with access to "All accessible organizations"
 # export AZURE_DEVOPS_EXT_PAT="<pat-token>" is required to perform organization ID query
 ./scripts/azure-oidc.sh \
-  -a app-azure-ado-oidc \
+  -a azure-ado-oidc \
   -o https://dev.azure.com/tonyskidmore\
   -p oidc \
   -c azurerm-oidc \
@@ -186,13 +209,12 @@ export AZURE_OIDC_YES_FLAG="true"
  # get org name by url and construct -i
  # -i sc://tonyskidmore/oidc/azurerm-oidc \
 
-# this should have been run
-# terraform AZDO_PERSONAL_ACCESS_TOKEN
-# PAT with scopes of at least  Service Connections - Read, query & manage
-# azure cli AZURE_DEVOPS_EXT_PAT
+
+# PAT with scopes of at least Service Connections - Read, query & manage
 # export AZURE_DEVOPS_EXT_PAT="<pat-token>"
 
-# get all env vars from json
+# Create a "Workload Identity federation (manual)" service connection in Azure DevOps
+# using the output of the ./scripts/azure-oidc.sh script above
 scripts/ado-create-oidc-sc.sh ./ado-oidc-app.json
 
 
@@ -202,7 +224,58 @@ scripts/ado-create-oidc-sc.sh ./ado-oidc-app.json
   -g rg-azure-ado-oidc \
   -m delete
 
+# vmss resource group
+./scripts/azure-oidc.sh \
+  -a vmss-ado-oidc \
+  -u https://vstoken.dev.azure.com/e1538f7b-5100-4fa8-8a72-5ea2518261e2 \
+  -g rg-vmss-win-001 \
+  -r Contributor \
+  -f AzureDevOps \
+  -t "environment=dev iac=az-cli" \
+  -j vmss-ado-oidc-app.json \
+  -o https://dev.azure.com/tonyskidmore \
+  -p win-vmss \
+  -c azurerm-oidc \
+  -d \
+  -b "$PWD/log.txt"
+
+scripts/ado-create-oidc-sc.sh ./vmss-ado-oidc-app.json
+
+# delete the app and the resource group
+./scripts/azure-oidc.sh \
+  -a vmss-ado-oidc \
+  -g rg-vmss-win-001 \
+  -m delete
+
 ````
+
+Create an OIDC connection to be used with `terraform-azurerm-vmss` and `terraform-azuredevops-elasticpool` Terraform modules.
+
+````bash
+
+# first create VMSS using: https://github.com/tonyskidmore/terraform-azurerm-vmss/tree/main/examples/admin_password
+
+./scripts/azure-oidc.sh \
+  -a vmss-ado-oidc \
+  -u https://vstoken.dev.azure.com/e1538f7b-5100-4fa8-8a72-5ea2518261e2 \
+  -g rg-tests-terraform-azurerm-vmss \
+  -r Contributor \
+  -f AzureDevOps \
+  -t "environment=dev iac=az-cli" \
+  -j vmss-ado-oidc-app.json \
+  -o https://dev.azure.com/tonyskidmore \
+  -p devops-vmss \
+  -c azurerm-sc
+
+scripts/ado-create-oidc-sc.sh ./vmss-ado-oidc-app.json
+
+./scripts/azure-oidc.sh \
+  -a vmss-ado-oidc \
+  -g rg-vmss-win-001 \
+  -m delete
+
+````
+
 
 ## GitHub references
 
@@ -225,6 +298,8 @@ scripts/ado-create-oidc-sc.sh ./ado-oidc-app.json
 
 [Use service principals & managed identities](https://learn.microsoft.com/en-us/azure/devops/integrate/get-started/authentication/service-principal-managed-identity?view=azure-devops)  
 
+[Service Principal Entitlements](https://learn.microsoft.com/en-us/rest/api/azure/devops/memberentitlementmanagement/service-principal-entitlements?view=azure-devops-rest-7.1&preserve-view=true)  
+
 ## Terraform references
 
 [Azure Provider: Authenticating using a Service Principal with Open ID Connect](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/guides/service_principal_oidc)  
@@ -240,5 +315,4 @@ scripts/ado-create-oidc-sc.sh ./ado-oidc-app.json
 [AzureCLI@2 task](https://github.com/Azure-Samples/azure-devops-terraform-oidc-ci-cd/blob/8f8c0073a145ddbcbcda2d67d4e9027e317a5c37/pipelines/oidc.yml#L81)  
 
 ## TODO
-* add option for Azure DevOps
 * further testing and tests

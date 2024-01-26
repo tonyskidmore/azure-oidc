@@ -13,7 +13,7 @@ usage () {
 Usage : ${script_name} [-h] -a <oidc_app_name> [-c <oidc_service_connection_name>] [-d] [-e <entra_tenant_id>] [-f oidc_federated_credential_scenario ] -i <oidc_subject_identifier> [-f <oidc_federated_credential_scenario>] [-g <oidc_resource_group_name>] [-j <json_file_location>] [-l <oidc_resource_group_location>] [-n <oidc_subscription_name>] [-m <mode>] [-o <oidc_organization>] [-p <oidc_project_name>] [-q] [-r <oidc_role_assignment>] [-s <oidc_subscription_id>] [-t <oidc_resource_group_tags>] [-u oidc_issuer_url] [-v <oidc_vstoken_ado_org_id>] [-y]
 
   -a = Azure AD app registration name
-  -b = debug file location
+  -b = debug output file location
   -c = Azure DevOps service connection name
   -d = debug mode
   -e = Entra Tenant ID - defalts to current subscription
@@ -30,9 +30,9 @@ Usage : ${script_name} [-h] -a <oidc_app_name> [-c <oidc_service_connection_name
   -q = quiet mode
   -r = Azure role assignment for OIDC scope
   -s = Azure subscription ID for OIDC
-  -t = Azure resource group for OIDC tags
+  -t = Azure resource group tags
   -u = OIDC issuer URL
-  -v = Azure DevOps organization ID
+  -v = Azure DevOps organization ID, for vstoken issuer URL
   -y = Answer yes to prompting to force deletion
 
 Purpose:
