@@ -45,7 +45,7 @@ check_oidc_issuer_url() {
 check_github_oidc_subject_format() {
   # TODO: does not fully validate semantic versioning
   local input="$1"
-  local regex="^repo:[a-zA-Z0-9_\-]+\/[a-zA-Z0-9_\-]+(:[a-zA-Z0-9_\-\/\.]+)+$"
+  local regex="(?i)^repo:[a-zA-Z0-9_\-]+\/[a-zA-Z0-9_\-]+(:[a-zA-Z0-9_\-\/\.]+)+$"
 
   if [[ ! $input =~ $regex ]]; then
       echo "$input: invalid GitHub OIDC subject format"
@@ -55,7 +55,7 @@ check_github_oidc_subject_format() {
 
 check_ado_oidc_subject_format() {
   local input="$1"
-  local regex="^sc:\/\/[a-zA-Z0-9_\-]+\/[a-zA-Z0-9_\-]+\/[a-zA-Z0-9_\-]+$"
+  local regex="(?i)^sc:\/\/[a-zA-Z0-9_\-]+\/[a-zA-Z0-9_\-]+\/[a-zA-Z0-9_\-]+$"
 
   if [[ ! $input =~ $regex ]]; then
       echo "$input: invalid Azure DevOps OIDC subject format"
