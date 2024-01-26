@@ -11,7 +11,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    environment: dev
+    # environment: dev
     steps:
     - name: 'az login'
       uses: azure/login@v1
