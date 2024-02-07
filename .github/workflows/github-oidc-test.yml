@@ -11,7 +11,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    environment: dev
+    # environment: dev
     steps:
     - name: 'az login'
       uses: azure/login@v1
@@ -22,4 +22,4 @@ jobs:
 
     - name: 'Azure CLI query'
       run: |
-          az group list --query "[?name=='rg-azure-github-oidc-test'].tags"
+          az group list --query "[?name=='rg-azure-github-oidc'].tags"

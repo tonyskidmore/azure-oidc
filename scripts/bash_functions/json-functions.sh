@@ -26,6 +26,16 @@ jq_count_list() {
   jq '. | length' <<< "$json"
 }
 
+function jq_ado_get_org_id {
+    local ado_org_name="$1"
+    local account_data="$2"
+    local account_id=""
+  
+    account_id=$(jq --arg ado_org_name "$ado_org_name" -r '.value[] | select(.accountName == $ado_org_name) | .accountId' <<< "$account_data")
+    echo "$account_id"
+}
+
+
 jq_get_by_key_ref() {
   local json="$1"
   local key="$2"
@@ -38,4 +48,13 @@ jq_get_first_by_key_ref() {
   local key="$2"
 
   jq -r --arg key "$key" '.[][$key]' <<< "$json"
+}
+
+jq_json_to_env_vars() {
+  local json_string="$1"
+
+  # loop through key/value using to_entries to add entries to variables
+  while IFS="=" read -r key value; do
+    export "$key"="$value"
+  done < <(jq -r 'to_entries | .[] | .key + "=" + (.value|tostring)' <<< "${json_string}")
 }
