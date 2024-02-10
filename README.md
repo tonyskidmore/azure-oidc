@@ -2,7 +2,7 @@
 
 Script to create Microsoft Entra ID application, service principal and federated credentials for use with OpenID Connect (OIDC).  
 
-This enables GitHub Actions workflows to access Azure resources without storing long-lived Azure credentials in GitHub secrets.
+This enables GitHub Actions workflows to access Azure resources without storing long-lived Azure credentials in GitHub secrets, it can also be used with Azure DevOps.
 
 The script has some limited RBAC capability e.g. you can define a resource group or subscription scope for the created app service principal.
 
@@ -21,12 +21,49 @@ The script has some limited RBAC capability e.g. you can define a resource group
   Read:  
   Directory Readers  
 
-## Tools
+### Tools
 * [Azure CLI](https://github.com/Azure/azure-cli) - created and tested with version 2.53.1
 * [jq](https://stedolan.github.io/jq) - created and tested with version 1.6
 
 The `ado-create-oidc-sc.sh` script additionally requires:
 * [envsubst](https://www.man7.org/linux/man-pages/man1/envsubst.1.html) - which is part of the gettext package
+
+### Syntax
+
+````bash
+
+scripts/azure-oidc.sh -h
+
+Usage : azure-oidc.sh [-h] -a <oidc_app_name> [-c <oidc_service_connection_name>] [-d] [-e <entra_tenant_id>] [-f oidc_federated_credential_scenario ] -i <oidc_subject_identifier> [-f <oidc_federated_credential_scenario>] [-g <oidc_resource_group_name>] [-j <json_file_location>] [-l <oidc_resource_group_location>] [-n <oidc_subscription_name>] [-m <mode>] [-o <oidc_organization>] [-p <oidc_project_name>] [-q] [-r <oidc_role_assignment>] [-s <oidc_subscription_id>] [-t <oidc_resource_group_tags>] [-u oidc_issuer_url] [-v <oidc_vstoken_ado_org_id>] [-y]
+
+  -a = Azure AD app registration name
+  -b = debug output file location
+  -c = Azure DevOps service connection name
+  -d = debug mode
+  -e = Entra Tenant ID - defalts to current subscription
+  -f = Federated credential scenario - defaluts to GitHub
+  -g = Azure resource group for OIDC RBAC assignment
+  -h = Show help and usage
+  -i = OIDC subject identifier
+  -j = JSON output file location
+  -l = Azure location for OIDC resource group
+  -m = Mode of operation - defaults to "create"
+  -n = Azure subscription name for OIDC
+  -o = Organization e.g. Azure DevOps organization URL
+  -p = Project e.g. Azure DevOps project name
+  -q = quiet mode
+  -r = Azure role assignment for OIDC scope
+  -s = Azure subscription ID for OIDC
+  -t = Azure resource group tags
+  -u = OIDC issuer URL
+  -v = Azure DevOps organization ID, for vstoken issuer URL
+  -y = Answer yes to prompting to force deletion
+
+Purpose:
+
+  Create or delete an Azure AD app registration with federated credentials for OIDC
+
+````
 
 ## GitHub examples
 
