@@ -1,6 +1,7 @@
 # azure-oidc
 
 Script to create Microsoft Entra ID application, service principal and federated credentials for use with OpenID Connect (OIDC).  
+This can be a helper when needing to create service principals in Entra ID that you need to run in a different security context to your Infrastructure as Code workflow i.e. which has no/limited access to Entra ID.
 
 This enables GitHub Actions workflows to access Azure resources without storing long-lived Azure credentials in GitHub secrets, it can also be used with Azure DevOps.
 
@@ -9,23 +10,26 @@ The script has some limited RBAC capability e.g. you can define a resource group
 ## Requirements
 
 ### Azure
-* Azure subscription  
-  Create or delete:  
+
+**Azure subscription**  
+  _Create or delete:_  
   Owner or Contributor + User Access Administrator  
-  Read:  
+  _Read:_  
   Reader  
 
-* Microsoft Entra ID  
-  Create or delete:  
+**Microsoft Entra ID**  
+  _Create or delete:_  
   Global Administrator or Application Administrator  
-  Read:  
+  _Read:_  
   Directory Readers  
 
 ### Tools
+
 * [Azure CLI](https://github.com/Azure/azure-cli) - created and tested with version 2.53.1
 * [jq](https://stedolan.github.io/jq) - created and tested with version 1.6
 
 The `ado-create-oidc-sc.sh` script additionally requires:
+
 * [envsubst](https://www.man7.org/linux/man-pages/man1/envsubst.1.html) - which is part of the gettext package
 
 ### Syntax
@@ -172,9 +176,10 @@ export AZURE_OIDC_YES_FLAG="true"
   -m delete
 
 ````
+
 ## Azure DevOps examples
 
-> Workload identity federation for Azure Resource Manager is currently in public preview
+> Workload identity federation for Azure Resource Manager is now [generally available](https://devblogs.microsoft.com/devops/workload-identity-federation-for-azure-deployments-is-now-generally-available/).
 
 See: [Manually configure Azure Resource Manager workload identity service connections](https://learn.microsoft.com/en-us/azure/devops/pipelines/release/configure-workload-identity?view=azure-devops)  
 
@@ -324,7 +329,6 @@ scripts/ado-create-oidc-sc.sh ./vmss-ado-oidc-app.json
 
 [Passwordless Github Actions with Azure Workload Identity OIDC](https://www.youtube.com/watch?v=7iCtY0ztYY4)  
 
-
 ## Azure and Azure DevOps references
 
 [Manually configure Azure Resource Manager workload identity service connections](https://learn.microsoft.com/en-us/azure/devops/pipelines/release/configure-workload-identity?view=azure-devops)  
@@ -352,4 +356,7 @@ scripts/ado-create-oidc-sc.sh ./vmss-ado-oidc-app.json
 [AzureCLI@2 task](https://github.com/Azure-Samples/azure-devops-terraform-oidc-ci-cd/blob/8f8c0073a145ddbcbcda2d67d4e9027e317a5c37/pipelines/oidc.yml#L81)  
 
 ## TODO
+
+* Add support for User Assigned Managed Identity
+* Mention using without PAT
 * further testing and tests
